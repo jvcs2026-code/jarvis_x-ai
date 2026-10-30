@@ -5,7 +5,7 @@ from openai import OpenAI
 # Page Configuration
 st.set_page_config(
     page_title="JARVIS AI",
-    page_icon="🤖",
+    page_icon="⚡",
     layout="wide"
 )
 
@@ -73,13 +73,13 @@ if not api_key:
     st.error("GROQ_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# Initialize session messages and system persona
+# Initialize session messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Display Chat History
 for message in st.session_state.messages:
-    avatar = "👤" if message["role"] == "user" else "🤖"
+    avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
@@ -92,46 +92,47 @@ if prompt:
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    try:
-        client = OpenAI(
-            base_url="https://api.groq.com/openai/v1",
-            api_key=api_key,
-        )
-
-        # System prompt giving it the true JARVIS persona
-        system_instruction = {
-            "role": "system",
-            "content": "You are JARVIS, a highly intelligent, polite, efficient, and sophisticated AI assistant. Respond helpfully, clearly, and with a touch of polite refinement."
-        }
-        
-        conversation_history = [system_instruction] + [
-            {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-        ]
-
-        # Active Groq models
-        available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
-        reply = None
-        last_error = None
-
-        for model_name in available_models:
+    # Thinking Spinner with ⚡ icon
+    with st.chat_message("assistant", avatar="⚡"):
+        with st.spinner("⚡ J.A.R.V.I.S. is processing..."):
             try:
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=conversation_history
+                client = OpenAI(
+                    base_url="https://api.groq.com/openai/v1",
+                    api_key=api_key,
                 )
-                reply = response.choices[0].message.content
+
+                system_instruction = {
+                    "role": "system",
+                    "content": "You are JARVIS, a highly intelligent, polite, efficient, and sophisticated AI assistant. Respond helpfully, clearly, and with a touch of polite refinement."
+                }
+                
+                conversation_history = [system_instruction] + [
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
+                ]
+
+                # Active Groq models
+                available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
+                reply = None
+                last_error = None
+
+                for model_name in available_models:
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=conversation_history
+                        )
+                        reply = response.choices[0].message.content
+                        if reply:
+                            break
+                    except Exception as model_err:
+                        last_error = model_err
+                        continue
+
                 if reply:
-                    break
-            except Exception as model_err:
-                last_error = model_err
-                continue
+                    st.markdown(reply)
+                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                else:
+                    st.error(f"Execution error: {last_error}")
 
-        if reply:
-            with st.chat_message("assistant", avatar="🤖"):
-                st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
-        else:
-            st.error(f"Execution error: {last_error}")
-
-    except Exception as e:
-        st.error(f"Error: {e}")
+            except Exception as e:
+                st.error(f"Error: {e}")
