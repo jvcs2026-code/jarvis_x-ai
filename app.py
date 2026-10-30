@@ -1,9 +1,17 @@
 import streamlit as st
-import g4f
+import os
+from openai import OpenAI
 
 st.set_page_config(page_title="My Personal AI", layout="wide")
 st.title("My Personal AI Assistant")
-st.write("A free AI assistant running without API keys.")
+st.write("Powered by Groq Cloud — Fast & Free!")
+
+# Secret retrieved silently behind the scenes
+api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+
+if not api_key:
+    st.error("GROQ_API_KEY is missing in Streamlit Secrets. Please set it in App Settings > Secrets.")
+    st.stop()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -21,17 +29,20 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                # Direct call using default free reverse-proxy routing
-                response = g4f.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
-                )
-                
-                reply = str(response)
-                st.markdown(reply)
-                st.session_state.messages.append({"role": "assistant", "content": reply})
-            except Exception as e:
-                st.error(f"Error: {e}")
+    try:
+        client = OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=api_key,
+        )
+        
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+        )
+        
+        reply = response.choices[0].message.content
+        with st.chat_message("assistant"):
+            st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+    except Exception as e:
+        st.error(f"Error: {e}")
