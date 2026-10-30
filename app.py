@@ -1,13 +1,9 @@
 import streamlit as st
-from g4f.client import Client
-from g4f.Provider import PollinationsAI, DeepInfra
+import g4f
 
 st.set_page_config(page_title="My Personal AI", layout="wide")
 st.title("My Personal AI Assistant")
-st.write("A 100% free AI assistant running without any API keys!")
-
-# Initialize g4f client
-client = Client()
+st.write("A free AI assistant running without API keys.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -27,30 +23,15 @@ if prompt:
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            reply = None
-            
-            # Try free open providers sequentially without key requirements
-            providers_to_try = [
-                (PollinationsAI, "mistralai/Mistral-7B-Instruct-v0.3"),
-                (PollinationsAI, "openai"),
-                (DeepInfra, "meta-llama/Meta-Llama-3.1-70B-Instruct")
-            ]
-
-            for provider, model_name in providers_to_try:
-                try:
-                    response = client.chat.completions.create(
-                        model=model_name,
-                        provider=provider,
-                        messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-                    )
-                    reply = response.choices[0].message.content
-                    if reply:
-                        break
-                except Exception:
-                    continue
-
-            if reply:
+            try:
+                # Direct call using default free reverse-proxy routing
+                response = g4f.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+                )
+                
+                reply = str(response)
                 st.markdown(reply)
                 st.session_state.messages.append({"role": "assistant", "content": reply})
-            else:
-                st.error("Free providers are busy right now. Please try sending your message again in a moment!")
+            except Exception as e:
+                st.error(f"Error: {e}")
