@@ -147,7 +147,7 @@ with st.sidebar:
 
 # 6. Render Existing Messages
 for message in st.session_state.messages:
-    avatar = "👤" if message["role"] == "user" else "🤖"
+    avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
@@ -161,7 +161,7 @@ if prompt:
         st.markdown(prompt)
 
     # JARVIS Response Block with ⚡ Thinking Animation
-    with st.chat_message("assistant", avatar="🤖"):
+    with st.chat_message("assistant", avatar="⚡"):
         with st.spinner("⚡ J.A.R.V.I.S. is processing neural pathways..."):
             try:
                 client = OpenAI(
