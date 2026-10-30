@@ -1,16 +1,12 @@
 import streamlit as st
-import os
-from openai import OpenAI
+from g4f.client import Client
 
 st.set_page_config(page_title="My Personal AI", layout="wide")
 st.title("My Personal AI Assistant")
-st.write("A public AI assistant powered by Streamlit Cloud.")
+st.write("A 100% free AI assistant running without any API keys!")
 
-# Get API key from Streamlit Secrets or Environment
-api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
-
-if not api_key:
-    api_key = st.text_input("Enter your Groq API Key (or set in Streamlit Secrets):", type="password")
+# Initialize g4f client (No API key needed!)
+client = Client()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -24,27 +20,21 @@ for message in st.session_state.messages:
 prompt = st.chat_input("Ask me anything...")
 
 if prompt:
-    if not api_key:
-        st.error("Please provide an API Key to continue.")
-    else:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        try:
-            client = OpenAI(
-                base_url="https://api.groq.com/openai/v1",
-                api_key=api_key,
-            )
-            
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-            )
-            
-            reply = response.choices[0].message.content
-            with st.chat_message("assistant"):
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            try:
+                # Uses free reverse-proxy models automatically
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+                )
+                
+                reply = response.choices[0].message.content
                 st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
-        except Exception as e:
-            st.error(f"Error: {e}")
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                st.error(f"Error: {e}")
