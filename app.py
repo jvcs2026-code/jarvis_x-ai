@@ -212,7 +212,6 @@ if prompt:
                     encoded_prompt = urllib.parse.quote(prompt)
                     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&seed=42"
                     
-                    # Test if the endpoint is reachable and not returning an HTML error page
                     res = requests.get(image_url, timeout=5)
                     if res.status_code == 200 and "image" in res.headers.get("content-type", ""):
                         st.image(image_url, caption=f"Generated for Boss: {prompt}")
@@ -226,7 +225,6 @@ if prompt:
                         st.warning("⚠️ Boss, the image synthesis service is currently at maximum capacity. Switching to neural text rendering to provide your design blueprint.")
                         raise Exception("Service at capacity")
                 except Exception:
-                    # Fallback to text model if image service is jammed
                     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
                     fallback_res = client.chat.completions.create(
                         model=selected_model_id,
@@ -234,7 +232,7 @@ if prompt:
                             {"role": "system", "content": "You are F.R.I.D.A.Y., Stark Industries AI."},
                             {"role": "user", "content": f"The image generator is busy. Provide a vivid descriptive blueprint and concept layout for: {prompt}"}
                         ]
-                    }
+                    )
                     fallback_reply = fallback_res.choices[0].message.content
                     st.markdown(fallback_reply)
                     st.session_state.messages.append({"role": "assistant", "content": fallback_reply})
