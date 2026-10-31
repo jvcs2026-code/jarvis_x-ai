@@ -4,11 +4,16 @@ import urllib.parse
 import requests
 from openai import OpenAI
 import streamlit as st
+from PIL import Image
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+favicon_path = BASE_DIR / "friday_favicon.png"
 
 # 1. Page Configuration with Sleek Vector Favicon
 st.set_page_config(
     page_title="F.R.I.D.A.Y. AI",
-    page_icon="friday_favicon.png",
+    page_icon=Image.open(favicon_path),
     layout="wide"
 )
 
