@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import urllib.parse
+import requests
 from openai import OpenAI
 
 # 1. Page Configuration
@@ -201,23 +202,42 @@ if prompt:
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
         
-        # Enhanced check: triggers if prompt contains image/draw keywords regardless of minor typos
         is_image_request = any(w in prompt_lower for w in ["image", "picture", "photo", "draw", "render"]) or \
                            any(action in prompt_lower for action in ["generate", "create", "make"]) and \
                            any(target in prompt_lower for target in ["boy", "girl", "car", "robot", "city", "futuristic", "landscape", "art", "painting"])
 
         if is_image_request:
             with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
-                encoded_prompt = urllib.parse.quote(prompt)
-                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
-                
-                st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": image_url, 
-                    "type": "image", 
-                    "caption": f"Generated for Boss: {prompt}"
-                })
+                try:
+                    encoded_prompt = urllib.parse.quote(prompt)
+                    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&seed=42"
+                    
+                    # Test if the endpoint is reachable and not returning an HTML error page
+                    res = requests.get(image_url, timeout=5)
+                    if res.status_code == 200 and "image" in res.headers.get("content-type", ""):
+                        st.image(image_url, caption=f"Generated for Boss: {prompt}")
+                        st.session_state.messages.append({
+                            "role": "assistant", 
+                            "content": image_url, 
+                            "type": "image", 
+                            "caption": f"Generated for Boss: {prompt}"
+                        })
+                    else:
+                        st.warning("⚠️ Boss, the image synthesis service is currently at maximum capacity. Switching to neural text rendering to provide your design blueprint.")
+                        raise Exception("Service at capacity")
+                except Exception:
+                    # Fallback to text model if image service is jammed
+                    client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+                    fallback_res = client.chat.completions.create(
+                        model=selected_model_id,
+                        messages=[
+                            {"role": "system", "content": "You are F.R.I.D.A.Y., Stark Industries AI."},
+                            {"role": "user", "content": f"The image generator is busy. Provide a vivid descriptive blueprint and concept layout for: {prompt}"}
+                        ]
+                    }
+                    fallback_reply = fallback_res.choices[0].message.content
+                    st.markdown(fallback_reply)
+                    st.session_state.messages.append({"role": "assistant", "content": fallback_reply})
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
                 try:
