@@ -137,7 +137,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE & VISION ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -152,13 +152,13 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Model Registry with the correct OpenRouter slug for Flux 1 Schnell
+# Verified Active OpenRouter Chat & Reasoning Models
 MODEL_OPTIONS = {
-    "Flux 1 Schnell (Fast Image Generation)": "black-forest-labs/flux-1-schnell",
-    "Claude 3.5 Sonnet (Advanced Intelligence)": "anthropic/claude-3.5-sonnet",
+    "Claude 3.5 Sonnet (Anthropic)": "anthropic/claude-3.5-sonnet",
     "GPT-4o (OpenAI)": "openai/gpt-4o",
     "Gemini Flash 1.5 (Google)": "google/gemini-flash-1.5",
-    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct"
+    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct",
+    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat"
 }
 
 # 6. Sidebar System Control & Interactive Model Selector
@@ -169,7 +169,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Neural Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=0  
+        index=3  # Defaults to Llama 3.3
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -184,13 +184,10 @@ with st.sidebar:
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
-        if message.get("type") == "image":
-            st.image(message["content"], caption=message.get("caption", ""))
-        else:
-            st.markdown(message["content"])
+        st.markdown(message["content"])
 
 # 8. Chat Input Prompt
-prompt = st.chat_input("Boss, what do you need me to analyze or generate?")
+prompt = st.chat_input("Boss, what do you need me to analyze?")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -198,7 +195,7 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="⚡"):
-        with st.spinner(f"⚡ F.R.I.D.A.Y. is executing via {selected_model_label.split(' ')[0]}..."):
+        with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
             try:
                 client = OpenAI(
                     base_url="https://openrouter.ai/api/v1",
@@ -207,29 +204,39 @@ if prompt:
 
                 system_instruction = {
                     "role": "system",
-                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor."
+                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
                 }
                 
                 conversation_history = [system_instruction] + [
-                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
                 ]
 
-                response = client.chat.completions.create(
-                    model=selected_model_id,
-                    messages=conversation_history,
-                    extra_headers={
-                        "HTTP-Referer": "https://friday-ai.streamlit.app",
-                        "X-Title": "FRIDAY AI HUD"
-                    }
-                )
-                
-                reply = response.choices[0].message.content
-                
+                fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
+                reply = None
+                last_error = None
+
+                for model_to_try in fallback_sequence:
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_to_try,
+                            messages=conversation_history,
+                            extra_headers={
+                                "HTTP-Referer": "https://friday-ai.streamlit.app",
+                                "X-Title": "FRIDAY AI HUD"
+                            }
+                        )
+                        reply = response.choices[0].message.content
+                        if reply:
+                            break
+                    except Exception as model_err:
+                        last_error = model_err
+                        continue
+
                 if reply:
                     st.markdown(reply)
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                 else:
-                    st.error("Execution Error: Empty response received.")
+                    st.error(f"Gateway Error: {last_error}")
 
             except Exception as e:
                 st.error(f"Gateway Error: {e}")
