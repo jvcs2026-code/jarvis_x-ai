@@ -183,4 +183,35 @@ if prompt:
 
                 system_instruction = {
                     "role": "system",
-                    "content": "You are F.R.I.D.A.Y., a highly intelligent, sharp, polite, and efficient AI assistant. Address the user respectfully
+                    "content": "You are F.R.I.D.A.Y., a highly intelligent, sharp, polite, and efficient AI assistant. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, tactical, and helpful tone. Keep answers clear, technical, and precise."
+                }
+                
+                conversation_history = [system_instruction] + [
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
+                ]
+
+                available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
+                reply = None
+                last_error = None
+
+                for model_name in available_models:
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=conversation_history
+                        )
+                        reply = response.choices[0].message.content
+                        if reply:
+                            break
+                    except Exception as model_err:
+                        last_error = model_err
+                        continue
+
+                if reply:
+                    st.markdown(reply)
+                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                else:
+                    st.error(f"System error: {last_error}")
+
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
