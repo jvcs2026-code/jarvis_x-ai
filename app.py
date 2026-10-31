@@ -152,14 +152,13 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Comprehensive Multi-Provider Model Registry
+# Updated, Verified Active OpenRouter Model Slugs
 MODEL_OPTIONS = {
-    "Claude 3.5 Sonnet (Anthropic)": "anthropic/claude-3.5-sonnet",
+    "Claude 3.5 Sonnet (Latest)": "anthropic/claude-3.5-sonnet",
     "GPT-4o (OpenAI)": "openai/gpt-4o",
-    "Gemini Pro 1.5 (Google)": "google/gemini-pro-1.5",
+    "Gemini Flash 1.5 (Google)": "google/gemini-flash-1.5",
     "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct",
-    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat",
-    "Mistral Large (Mistral)": "mistralai/mistral-large-2411"
+    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat"
 }
 
 # 6. Sidebar System Control & Interactive Model Selector
@@ -170,7 +169,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Neural Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=0
+        index=3  # Defaults to Llama 3.3 which is super stable and fast
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -181,7 +180,7 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# 7. Render Messages with "⚡" as the Assistant Avatar
+# 7. Render Messages with "⚡" Avatar
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
@@ -212,22 +211,33 @@ if prompt:
                     {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
                 ]
 
-                response = client.chat.completions.create(
-                    model=selected_model_id,
-                    messages=conversation_history,
-                    extra_headers={
-                        "HTTP-Referer": "https://friday-ai.streamlit.app",
-                        "X-Title": "FRIDAY AI HUD"
-                    }
-                )
-                
-                reply = response.choices[0].message.content
+                # Fallback list ensuring smooth recovery if any single model route changes
+                fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
+                reply = None
+                last_error = None
+
+                for model_to_try in fallback_sequence:
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_to_try,
+                            messages=conversation_history,
+                            extra_headers={
+                                "HTTP-Referer": "https://friday-ai.streamlit.app",
+                                "X-Title": "FRIDAY AI HUD"
+                            }
+                        )
+                        reply = response.choices[0].message.content
+                        if reply:
+                            break
+                    except Exception as model_err:
+                        last_error = model_err
+                        continue
 
                 if reply:
                     st.markdown(reply)
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                 else:
-                    st.error("Execution Error: Empty response received from model provider.")
+                    st.error(f"Gateway Error: {last_error}")
 
             except Exception as e:
                 st.error(f"Gateway Error: {e}")
