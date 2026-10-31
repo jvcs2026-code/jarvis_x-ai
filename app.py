@@ -137,7 +137,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE & VISION ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -152,13 +152,13 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Updated, Verified Active OpenRouter Model Slugs
+# Model Registry including Text and Image Models
 MODEL_OPTIONS = {
-    "Claude 3.5 Sonnet (Latest)": "anthropic/claude-3.5-sonnet",
+    "Flux Schnell (Fast Image Generation)": "black-forest-labs/flux-schnell",
+    "Claude 3.5 Sonnet (Advanced Intelligence)": "anthropic/claude-3.5-sonnet",
     "GPT-4o (OpenAI)": "openai/gpt-4o",
     "Gemini Flash 1.5 (Google)": "google/gemini-flash-1.5",
-    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct",
-    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat"
+    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct"
 }
 
 # 6. Sidebar System Control & Interactive Model Selector
@@ -169,7 +169,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Neural Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=3  # Defaults to Llama 3.3 which is super stable and fast
+        index=0  # Defaults to Flux Schnell for easy image generation testing
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -184,10 +184,13 @@ with st.sidebar:
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+        if message.get("type") == "image":
+            st.image(message["content"], caption=message.get("caption", ""))
+        else:
+            st.markdown(message["content"])
 
 # 8. Chat Input Prompt
-prompt = st.chat_input("Boss, what do you need me to analyze?")
+prompt = st.chat_input("Boss, what do you need me to analyze or generate?")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -195,49 +198,62 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="⚡"):
-        with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
+        with st.spinner(f"⚡ F.R.I.D.A.Y. is executing via {selected_model_label.split(' ')[0]}..."):
             try:
                 client = OpenAI(
                     base_url="https://openrouter.ai/api/v1",
                     api_key=api_key,
                 )
 
-                system_instruction = {
-                    "role": "system",
-                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
-                }
-                
-                conversation_history = [system_instruction] + [
-                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-                ]
+                # Check if user selected an image model or explicitly asked for an image
+                is_image_model = "flux" in selected_model_id.lower() or "image" in selected_model_id.lower()
 
-                # Fallback list ensuring smooth recovery if any single model route changes
-                fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
-                reply = None
-                last_error = None
-
-                for model_to_try in fallback_sequence:
+                if is_image_model:
+                    # Request image generation via OpenRouter/OpenAI images endpoint format
                     try:
-                        response = client.chat.completions.create(
-                            model=model_to_try,
-                            messages=conversation_history,
-                            extra_headers={
-                                "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                "X-Title": "FRIDAY AI HUD"
-                            }
+                        response = client.images.generate(
+                            model=selected_model_id,
+                            prompt=prompt,
+                            n=1,
+                            size="1024x1024"
                         )
-                        reply = response.choices[0].message.content
-                        if reply:
-                            break
-                    except Exception as model_err:
-                        last_error = model_err
-                        continue
-
-                if reply:
-                    st.markdown(reply)
-                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                        image_url = response.data[0].url
+                        st.image(image_url, caption=prompt)
+                        st.session_state.messages.append({
+                            "role": "assistant", 
+                            "content": image_url, 
+                            "type": "image", 
+                            "caption": prompt
+                        })
+                    except Exception as img_err:
+                        # Fallback to chat completion if image endpoint structure differs
+                        st.error(f"Image Generation Notice: {img_err}")
                 else:
-                    st.error(f"Gateway Error: {last_error}")
+                    # Standard Text Chat Handling
+                    system_instruction = {
+                        "role": "system",
+                        "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor."
+                    }
+                    
+                    conversation_history = [system_instruction] + [
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
+                    ]
+
+                    response = client.chat.completions.create(
+                        model=selected_model_id,
+                        messages=conversation_history,
+                        extra_headers={
+                            "HTTP-Referer": "https://friday-ai.streamlit.app",
+                            "X-Title": "FRIDAY AI HUD"
+                        }
+                    )
+                    
+                    reply = response.choices[0].message.content
+                    if reply:
+                        st.markdown(reply)
+                        st.session_state.messages.append({"role": "assistant", "content": reply})
+                    else:
+                        st.error("Execution Error: Empty response received.")
 
             except Exception as e:
                 st.error(f"Gateway Error: {e}")
