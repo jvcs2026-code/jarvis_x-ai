@@ -125,3 +125,103 @@ st.markdown("""
 
     /* FRIDAY Assistant Chat Card */
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
+        border-left: 4px solid #10B981 !important; /* Matches green status */
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. Render FRIDAY Blue Geometric HUD Component
+st.markdown("""
+    <div class="friday-logo-container">
+        <div class="friday-ring-wrapper">
+            <div class="friday-ring-outer"></div>
+        </div>
+        <div class="friday-core">
+            <span class="friday-symbol">F</span>
+        </div>
+        <div class="hud-title">F.R.I.D.A.Y.</div>
+        <div class="hud-status">● NEURAL PATHWAYS ONLINE | SYSTEM OPERATIONAL</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# 4. Groq Secret Retrieval
+api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+
+if not api_key:
+    st.error("GROQ_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
+    st.stop()
+
+# 5. Session State Management
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Sidebar Controls
+with st.sidebar:
+    st.title("⚙️ System Control")
+    st.write("● **Status:** Normal Operational Parameters")
+    st.write("● **Model:** Groq Llama 3 High-Speed")
+    if st.button("🗑️ Purge Consciousness Log", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+# 6. Display Chat History
+for message in st.session_state.messages:
+    # Set icons matching the new HUD look
+    avatar = "👤" if message["role"] == "user" else "🤖"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
+
+# 7. Chat Input
+prompt = st.chat_input("Boss, what do you need me to analyze?")
+
+if prompt:
+    # Append User Message
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(prompt)
+
+    # thinking/stream spinner
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("⚡ F.R.I.D.A.Y. is processing neural pathways..."):
+            try:
+                client = OpenAI(
+                    base_url="https://api.groq.com/openai/v1",
+                    api_key=api_key,
+                )
+
+                # high tech system instruction specifying the F.R.I.D.A.Y. persona
+                system_instruction = {
+                    "role": "system",
+                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
+                }
+                
+                conversation_history = [system_instruction] + [
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
+                ]
+
+                # models
+                available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
+                reply = None
+                last_error = None
+
+                for model_name in available_models:
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=conversation_history
+                        )
+                        reply = response.choices[0].message.content
+                        if reply:
+                            break
+                    except Exception as model_err:
+                        last_error = model_err
+                        continue
+
+                if reply:
+                    st.markdown(reply)
+                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                else:
+                    st.error(f"Execution Error: {last_error}")
+
+            except Exception as e:
+                st.error(f"Error: {e}")
