@@ -178,4 +178,95 @@ with st.sidebar:
     st.divider()
 
     if st.button("🗑️ Purge Consciousness Log", use_container_width=True):
-        st.session_state.messages =
+        st.session_state.messages = []
+        st.rerun()
+
+# 7. Render Message History (Supporting both Text and Images)
+for message in st.session_state.messages:
+    avatar = "👤" if message["role"] == "user" else "⚡"
+    with st.chat_message(message["role"], avatar=avatar):
+        if message.get("type") == "image":
+            st.image(message["content"], caption=message.get("caption", ""))
+        else:
+            st.markdown(message["content"])
+
+# 8. Chat Input Prompt
+prompt = st.chat_input("Boss, what do you need me to analyze or create?")
+
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant", avatar="⚡"):
+        prompt_lower = prompt.lower()
+        
+        # Broad trigger for image/drawing requests
+        image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
+        is_image_request = any(kw in prompt_lower for kw in image_keywords)
+
+        if is_image_request:
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-res visual assets..."):
+                img_prompt = prompt
+                for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
+                    if prompt_lower.startswith(prefix):
+                        img_prompt = prompt[len(prefix):].strip()
+                        break
+                
+                # Use Pollinations' dedicated multi-gateway backup URL format to avoid capacity blocks
+                clean_query = img_prompt if img_prompt else prompt
+                image_url = f"https://pollinations.ai/p/{requests.utils.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
+                
+                st.image(image_url, caption=f"Generated for Boss: {prompt}")
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": image_url, 
+                    "type": "image", 
+                    "caption": f"Generated for Boss: {prompt}"
+                })
+        else:
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
+                try:
+                    client = OpenAI(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=api_key,
+                    )
+
+                    system_instruction = {
+                        "role": "system",
+                        "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
+                    }
+                    
+                    conversation_history = [system_instruction] + [
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
+                    ]
+
+                    fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
+                    reply = None
+                    last_error = None
+
+                    for model_to_try in fallback_sequence:
+                        try:
+                            response = client.chat.completions.create(
+                                model=model_to_try,
+                                messages=conversation_history,
+                                extra_headers={
+                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
+                                    "X-Title": "FRIDAY AI HUD"
+                                }
+                            )
+                            reply = response.choices[0].message.content
+                            if reply:
+                                break
+                        except Exception as model_err:
+                            last_error = model_err
+                            continue
+
+                    if reply:
+                        st.markdown(reply)
+                        st.session_state.messages.append({"role": "assistant", "content": reply})
+                    else:
+                        st.error(f"Gateway Error: {last_error}")
+
+                except Exception as e:
+                    st.error(f"Gateway Error: {e}")
