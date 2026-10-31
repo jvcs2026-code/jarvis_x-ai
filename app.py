@@ -170,7 +170,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Neural Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=3  # Defaults to Llama 3.3
+        index=3  
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -199,23 +199,24 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="⚡"):
-        # Check if the user is asking to create/generate an image
         prompt_lower = prompt.lower()
-        is_image_request = any(keyword in prompt_lower for keyword in ["generate an image", "create an image", "draw", "make an image", "render", "show me a picture"])
+        
+        # Enhanced check: triggers if prompt contains image/draw keywords regardless of minor typos
+        is_image_request = any(w in prompt_lower for w in ["image", "picture", "photo", "draw", "render"]) or \
+                           any(action in prompt_lower for action in ["generate", "create", "make"]) and \
+                           any(target in prompt_lower for target in ["boy", "girl", "car", "robot", "city", "futuristic", "landscape", "art", "painting"])
 
         if is_image_request:
             with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
-                # Clean up the prompt to use as the image generation description
-                img_prompt = prompt.replace("generate an image of", "").replace("create an image of", "").replace("draw", "").strip()
-                encoded_prompt = urllib.parse.quote(img_prompt)
+                encoded_prompt = urllib.parse.quote(prompt)
                 image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
                 
-                st.image(image_url, caption=f"Generated for Boss: {img_prompt}")
+                st.image(image_url, caption=f"Generated for Boss: {prompt}")
                 st.session_state.messages.append({
                     "role": "assistant", 
                     "content": image_url, 
                     "type": "image", 
-                    "caption": f"Generated for Boss: {img_prompt}"
+                    "caption": f"Generated for Boss: {prompt}"
                 })
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
