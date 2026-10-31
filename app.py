@@ -117,7 +117,7 @@ MODEL_OPTIONS = {
 }
 
 with st.sidebar:
-    st.title("System Control")
+    st.title("⚙️ System Control")
     st.markdown("**Status:** " + ("Gateway key detected" if api_key else "API key missing"))
     selected_model_label = st.selectbox(
         "Neural Model Core", list(MODEL_OPTIONS.keys()), index=3
