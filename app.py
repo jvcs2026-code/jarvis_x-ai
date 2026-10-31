@@ -3,11 +3,12 @@ import os
 import urllib.parse
 import requests
 from openai import OpenAI
+import streamlit as st
 
 # 1. Page Configuration with Sleek Vector Favicon
 st.set_page_config(
     page_title="F.R.I.D.A.Y. AI",
-    page_icon="https://raw.githubusercontent.com/jvcs2026-code/jarvis_x-ai/main/friday_favicon.png",
+    page_icon="friday_favicon.png",
     layout="wide"
 )
 
