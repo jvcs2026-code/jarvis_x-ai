@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 from openai import OpenAI
-import time
 
 # 1. Page Configuration
 st.set_page_config(
@@ -26,53 +25,53 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin-top: 20px;
-        margin-bottom: 25px;
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+
+    /* Shared Wrapper to Perfectly Center Dotted Ring Around Core */
+    .friday-reactor-wrapper {
         position: relative;
+        width: 150px;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Revolving Dotted Outer Ring */
+    .friday-ring-outer {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 2px dashed rgba(0, 240, 255, 0.7);
+        animation: rotateDashedRing 10s linear infinite;
+        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
     }
 
     /* Core Pulsing Blue Geometric 'F' */
     .friday-core {
-        position: relative;
-        width: 130px;
-        height: 130px;
+        position: absolute;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.25) 0%, rgba(0,0,0,1) 80%);
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(1, 4, 9, 0.95) 80%);
         border: 2px solid #00F0FF;
-        box-shadow: 0 0 35px #00F0FF, inset 0 0 20px #00F0FF;
+        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
         display: flex;
         align-items: center;
         justify-content: center;
         animation: pulseFRIDAY 3s infinite ease-in-out;
     }
 
-    /* Rotational Blue Geometric Outer Rings */
-    .friday-ring-wrapper {
-        position: absolute;
-        width: 170px;
-        height: 170px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .friday-ring-outer {
-        position: absolute;
-        width: 170px;
-        height: 170px;
-        border-radius: 50%;
-        border: 2px dashed rgba(0, 240, 255, 0.6);
-        animation: rotateDashedRing 12s linear infinite;
-        box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
-    }
-
     /* Central Symbol - The Geometric 'F' */
     .friday-symbol {
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 900;
         color: #00F0FF;
         text-shadow: 0 0 20px #00F0FF;
-        font-family: 'Courier New', monospace; /* More geometric/tech feel */
+        font-family: 'Courier New', monospace;
     }
 
     /* CSS Keyframe Animations */
@@ -100,7 +99,7 @@ st.markdown("""
     }
 
     .hud-status {
-        color: #10B981; /* Green status */
+        color: #10B981;
         font-size: 1.0rem;
         letter-spacing: 2px;
         font-weight: 600;
@@ -118,26 +117,24 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* User Chat Card */
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
         border-left: 4px solid #00F0FF !important;
     }
 
-    /* FRIDAY Assistant Chat Card */
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #10B981 !important; /* Matches green status */
+        border-left: 4px solid #10B981 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Render FRIDAY Blue Geometric HUD Component
+# 3. Render FRIDAY Blue Geometric HUD Component with Concentric Wrapper
 st.markdown("""
     <div class="friday-logo-container">
-        <div class="friday-ring-wrapper">
+        <div class="friday-reactor-wrapper">
             <div class="friday-ring-outer"></div>
-        </div>
-        <div class="friday-core">
-            <span class="friday-symbol">F</span>
+            <div class="friday-core">
+                <span class="friday-symbol">F</span>
+            </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
         <div class="hud-status">● NEURAL PATHWAYS ONLINE | SYSTEM OPERATIONAL</div>
@@ -166,7 +163,6 @@ with st.sidebar:
 
 # 6. Display Chat History
 for message in st.session_state.messages:
-    # Set icons matching the new HUD look
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
@@ -175,12 +171,10 @@ for message in st.session_state.messages:
 prompt = st.chat_input("Boss, what do you need me to analyze?")
 
 if prompt:
-    # Append User Message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # thinking/stream spinner
     with st.chat_message("assistant", avatar="⚡"):
         with st.spinner("⚡ F.R.I.D.A.Y. is processing neural pathways..."):
             try:
@@ -189,7 +183,6 @@ if prompt:
                     api_key=api_key,
                 )
 
-                # high tech system instruction specifying the F.R.I.D.A.Y. persona
                 system_instruction = {
                     "role": "system",
                     "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
@@ -199,7 +192,6 @@ if prompt:
                     {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
                 ]
 
-                # models
                 available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
                 reply = None
                 last_error = None
