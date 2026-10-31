@@ -4,7 +4,7 @@ from openai import OpenAI
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="JARVIS System HUD",
+    page_title="FRIDAY System HUD",
     page_icon="⚡",
     layout="wide"
 )
@@ -134,7 +134,7 @@ st.markdown("""
                 <span class="arc-symbol">⚡</span>
             </div>
         </div>
-        <div class="hud-title">J.A.R.V.I.S.</div>
+        <div class="hud-title">F.R.I.D.A.Y.</div>
         <div class="hud-sub">● SYSTEM ONLINE | NEURAL CORE ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
@@ -166,7 +166,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # 7. Chat Input
-prompt = st.chat_input("At your service, sir. What can I calculate for you today?")
+prompt = st.chat_input("Boss, what do you need me to analyze today?")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -174,7 +174,7 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="🤖"):
-        with st.spinner("⚡ J.A.R.V.I.S. is processing neural pathways..."):
+        with st.spinner("⚡ F.R.I.D.A.Y. is processing neural pathways..."):
             try:
                 client = OpenAI(
                     base_url="https://api.groq.com/openai/v1",
@@ -183,35 +183,4 @@ if prompt:
 
                 system_instruction = {
                     "role": "system",
-                    "content": "You are JARVIS, a highly sophisticated, articulate, helpful, and polite AI assistant. Address the user respectfully with occasional subtle refinement (e.g., 'Right away, sir', 'At your service'). Keep answers clear, technical, and precise."
-                }
-                
-                conversation_history = [system_instruction] + [
-                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-                ]
-
-                available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
-                reply = None
-                last_error = None
-
-                for model_name in available_models:
-                    try:
-                        response = client.chat.completions.create(
-                            model=model_name,
-                            messages=conversation_history
-                        )
-                        reply = response.choices[0].message.content
-                        if reply:
-                            break
-                    except Exception as model_err:
-                        last_error = model_err
-                        continue
-
-                if reply:
-                    st.markdown(reply)
-                    st.session_state.messages.append({"role": "assistant", "content": reply})
-                else:
-                    st.error(f"System error: {last_error}")
-
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
+                    "content": "You are F.R.I.D.A.Y., a highly intelligent, sharp, polite, and efficient AI assistant. Address the user respectfully
