@@ -6,8 +6,8 @@ from openai import OpenAI
 
 # 1. Page Configuration with Sleek Vector Favicon
 st.set_page_config(
-    page_title="FRIDAY SYSTEM HUD",
-    page_icon="friday.png",
+    page_title="F.R.I.D.A.Y. AI",
+    page_icon="friday_favicon.png",
     layout="wide"
 )
 
