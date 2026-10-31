@@ -152,7 +152,7 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Model Registry including Text and Image Models
+# Model Registry including Text, Vision, and Image models supported by OpenRouter
 MODEL_OPTIONS = {
     "Flux Schnell (Fast Image Generation)": "black-forest-labs/flux-schnell",
     "Claude 3.5 Sonnet (Advanced Intelligence)": "anthropic/claude-3.5-sonnet",
@@ -169,7 +169,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Neural Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=0  # Defaults to Flux Schnell for easy image generation testing
+        index=0  
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -205,55 +205,34 @@ if prompt:
                     api_key=api_key,
                 )
 
-                # Check if user selected an image model or explicitly asked for an image
-                is_image_model = "flux" in selected_model_id.lower() or "image" in selected_model_id.lower()
+                system_instruction = {
+                    "role": "system",
+                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor."
+                }
+                
+                conversation_history = [system_instruction] + [
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
+                ]
 
-                if is_image_model:
-                    # Request image generation via OpenRouter/OpenAI images endpoint format
-                    try:
-                        response = client.images.generate(
-                            model=selected_model_id,
-                            prompt=prompt,
-                            n=1,
-                            size="1024x1024"
-                        )
-                        image_url = response.data[0].url
-                        st.image(image_url, caption=prompt)
-                        st.session_state.messages.append({
-                            "role": "assistant", 
-                            "content": image_url, 
-                            "type": "image", 
-                            "caption": prompt
-                        })
-                    except Exception as img_err:
-                        # Fallback to chat completion if image endpoint structure differs
-                        st.error(f"Image Generation Notice: {img_err}")
-                else:
-                    # Standard Text Chat Handling
-                    system_instruction = {
-                        "role": "system",
-                        "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor."
+                # OpenRouter routes image generation models via chat completions when returning image markdown URLs or standard outputs
+                response = client.chat.completions.create(
+                    model=selected_model_id,
+                    messages=conversation_history,
+                    extra_headers={
+                        "HTTP-Referer": "https://friday-ai.streamlit.app",
+                        "X-Title": "FRIDAY AI HUD"
                     }
-                    
-                    conversation_history = [system_instruction] + [
-                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
-                    ]
-
-                    response = client.chat.completions.create(
-                        model=selected_model_id,
-                        messages=conversation_history,
-                        extra_headers={
-                            "HTTP-Referer": "https://friday-ai.streamlit.app",
-                            "X-Title": "FRIDAY AI HUD"
-                        }
-                    )
-                    
-                    reply = response.choices[0].message.content
-                    if reply:
-                        st.markdown(reply)
-                        st.session_state.messages.append({"role": "assistant", "content": reply})
-                    else:
-                        st.error("Execution Error: Empty response received.")
+                )
+                
+                reply = response.choices[0].message.content
+                
+                # Check if the output contains an image URL or markdown image
+                if reply:
+                    st.markdown(reply)
+                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                else:
+                    st.error("Execution Error: Empty response received.")
 
             except Exception as e:
+                # Fallback handler if model slug changes
                 st.error(f"Gateway Error: {e}")
