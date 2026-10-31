@@ -167,7 +167,7 @@ with st.sidebar:
 # 6. Display Chat History
 for message in st.session_state.messages:
     # Set icons matching the new HUD look
-    avatar = "👤" if message["role"] == "user" else "🤖"
+    avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
@@ -181,7 +181,7 @@ if prompt:
         st.markdown(prompt)
 
     # thinking/stream spinner
-    with st.chat_message("assistant", avatar="🤖"):
+    with st.chat_message("assistant", avatar="⚡"):
         with st.spinner("⚡ F.R.I.D.A.Y. is processing neural pathways..."):
             try:
                 client = OpenAI(
