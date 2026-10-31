@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import urllib.parse
 from openai import OpenAI
 
 # 1. Page Configuration
@@ -137,7 +138,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE & IMAGE SYNTHESIS ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -152,7 +153,7 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Verified Active OpenRouter Chat & Reasoning Models
+# Verified Active OpenRouter Chat Models
 MODEL_OPTIONS = {
     "Claude 3.5 Sonnet (Anthropic)": "anthropic/claude-3.5-sonnet",
     "GPT-4o (OpenAI)": "openai/gpt-4o",
@@ -180,14 +181,17 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# 7. Render Messages with "⚡" Avatar
+# 7. Render Message History (Supporting both Text and Images)
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+        if message.get("type") == "image":
+            st.image(message["content"], caption=message.get("caption", ""))
+        else:
+            st.markdown(message["content"])
 
 # 8. Chat Input Prompt
-prompt = st.chat_input("Boss, what do you need me to analyze?")
+prompt = st.chat_input("Boss, what do you need me to analyze or create?")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -195,48 +199,67 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="⚡"):
-        with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
-            try:
-                client = OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key=api_key,
-                )
+        # Check if the user is asking to create/generate an image
+        prompt_lower = prompt.lower()
+        is_image_request = any(keyword in prompt_lower for keyword in ["generate an image", "create an image", "draw", "make an image", "render", "show me a picture"])
 
-                system_instruction = {
-                    "role": "system",
-                    "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
-                }
+        if is_image_request:
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
+                # Clean up the prompt to use as the image generation description
+                img_prompt = prompt.replace("generate an image of", "").replace("create an image of", "").replace("draw", "").strip()
+                encoded_prompt = urllib.parse.quote(img_prompt)
+                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
                 
-                conversation_history = [system_instruction] + [
-                    {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
-                ]
+                st.image(image_url, caption=f"Generated for Boss: {img_prompt}")
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": image_url, 
+                    "type": "image", 
+                    "caption": f"Generated for Boss: {img_prompt}"
+                })
+        else:
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
+                try:
+                    client = OpenAI(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=api_key,
+                    )
 
-                fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
-                reply = None
-                last_error = None
+                    system_instruction = {
+                        "role": "system",
+                        "content": "You are F.R.I.D.A.Y., a highly articulate, intelligent, polite, and efficient AI assistant developed by Stark Industries. Address the user respectfully as 'Boss' or 'Sir', maintaining a calm, sophisticated, tactical demeanor. Your answers should be technically precise, clear, and proactive."
+                    }
+                    
+                    conversation_history = [system_instruction] + [
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
+                    ]
 
-                for model_to_try in fallback_sequence:
-                    try:
-                        response = client.chat.completions.create(
-                            model=model_to_try,
-                            messages=conversation_history,
-                            extra_headers={
-                                "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                "X-Title": "FRIDAY AI HUD"
-                            }
-                        )
-                        reply = response.choices[0].message.content
-                        if reply:
-                            break
-                    except Exception as model_err:
-                        last_error = model_err
-                        continue
+                    fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
+                    reply = None
+                    last_error = None
 
-                if reply:
-                    st.markdown(reply)
-                    st.session_state.messages.append({"role": "assistant", "content": reply})
-                else:
-                    st.error(f"Gateway Error: {last_error}")
+                    for model_to_try in fallback_sequence:
+                        try:
+                            response = client.chat.completions.create(
+                                model=model_to_try,
+                                messages=conversation_history,
+                                extra_headers={
+                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
+                                    "X-Title": "FRIDAY AI HUD"
+                                }
+                            )
+                            reply = response.choices[0].message.content
+                            if reply:
+                                break
+                        except Exception as model_err:
+                            last_error = model_err
+                            continue
 
-            except Exception as e:
-                st.error(f"Gateway Error: {e}")
+                    if reply:
+                        st.markdown(reply)
+                        st.session_state.messages.append({"role": "assistant", "content": reply})
+                    else:
+                        st.error(f"Gateway Error: {last_error}")
+
+                except Exception as e:
+                    st.error(f"Gateway Error: {e}")
