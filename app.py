@@ -6,7 +6,7 @@ from openai import OpenAI
 # 1. Page Configuration
 st.set_page_config(
     page_title="FRIDAY SYSTEM HUD",
-    page_icon="⚡",
+    page_icon="https://cdn-icons-png.flaticon.com/512/4712/4712109.png", # Example futuristic icon URL
     layout="wide"
 )
 
