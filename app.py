@@ -201,17 +201,20 @@ if prompt:
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
         
-        is_image_request = any(w in prompt_lower for w in ["image", "picture", "photo", "draw", "render"]) or \
-                           any(action in prompt_lower for action in ["generate", "create", "make"]) and \
-                           any(target in prompt_lower for target in ["boy", "girl", "car", "robot", "city", "futuristic", "landscape", "art", "painting"])
+        # Broad trigger for any image/drawing/creation command
+        image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
+        is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
             with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
-                # Clean prompt for image generation URL
-                clean_prompt = prompt.replace("generate", "").replace("create", "").replace("an image of", "").replace("a picture of", "").strip()
-                encoded_prompt = urllib.parse.quote(clean_prompt if clean_prompt else prompt)
+                # Clean prompt to pass your exact description to the renderer
+                img_prompt = prompt
+                for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
+                    if prompt_lower.startswith(prefix):
+                        img_prompt = prompt[len(prefix):].strip()
+                        break
                 
-                # Direct image generation endpoint URL
+                encoded_prompt = urllib.parse.quote(img_prompt if img_prompt else prompt)
                 image_url = f"https://pollinations.ai/p/{encoded_prompt}?width=1024&height=1024&nologo=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
