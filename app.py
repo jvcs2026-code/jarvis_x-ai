@@ -1,12 +1,13 @@
 import streamlit as st
 import os
+import urllib.parse
 import requests
 from openai import OpenAI
 
-# 1. Page Configuration
+# 1. Page Configuration with Custom Favicon
 st.set_page_config(
     page_title="FRIDAY SYSTEM HUD",
-    page_icon="https://cdn-icons-png.flaticon.com/512/4712/4712109.png", # Example futuristic icon URL
+    page_icon="friday.jpg",  # Uses your uploaded F.R.I.D.A.Y. core graphic as the favicon
     layout="wide"
 )
 
@@ -138,7 +139,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE & STABLE IMAGE SYNTHESIS ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE & IMAGE SYNTHESIS ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -201,7 +202,6 @@ if prompt:
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
         
-        # Broad trigger for image/drawing requests
         image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
@@ -213,7 +213,6 @@ if prompt:
                         img_prompt = prompt[len(prefix):].strip()
                         break
                 
-                # Use Pollinations' dedicated multi-gateway backup URL format to avoid capacity blocks
                 clean_query = img_prompt if img_prompt else prompt
                 image_url = f"https://pollinations.ai/p/{requests.utils.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
                 
@@ -238,35 +237,4 @@ if prompt:
                     }
                     
                     conversation_history = [system_instruction] + [
-                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
-                    ]
-
-                    fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
-                    reply = None
-                    last_error = None
-
-                    for model_to_try in fallback_sequence:
-                        try:
-                            response = client.chat.completions.create(
-                                model=model_to_try,
-                                messages=conversation_history,
-                                extra_headers={
-                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                    "X-Title": "FRIDAY AI HUD"
-                                }
-                            )
-                            reply = response.choices[0].message.content
-                            if reply:
-                                break
-                        except Exception as model_err:
-                            last_error = model_err
-                            continue
-
-                    if reply:
-                        st.markdown(reply)
-                        st.session_state.messages.append({"role": "assistant", "content": reply})
-                    else:
-                        st.error(f"Gateway Error: {last_error}")
-
-                except Exception as e:
-                    st.error(f"Gateway Error: {e}")
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type")
