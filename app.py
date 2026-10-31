@@ -127,7 +127,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Render FRIDAY Blue Geometric HUD Component with Concentric Wrapper
+# 3. Render FRIDAY Header HUD Component
 st.markdown("""
     <div class="friday-logo-container">
         <div class="friday-reactor-wrapper">
@@ -137,37 +137,57 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● NEURAL PATHWAYS ONLINE | SYSTEM OPERATIONAL</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
-# 4. Groq Secret Retrieval
-api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+# 4. OpenRouter API Key Fetch
+api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
 if not api_key:
-    st.error("GROQ_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
+    st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# 5. Session State Management
+# 5. Session State Setup
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Sidebar Controls
+# Comprehensive Multi-Provider Model Registry
+MODEL_OPTIONS = {
+    "Claude 3.5 Sonnet (Anthropic)": "anthropic/claude-3.5-sonnet",
+    "GPT-4o (OpenAI)": "openai/gpt-4o",
+    "Gemini Pro 1.5 (Google)": "google/gemini-pro-1.5",
+    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct",
+    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat",
+    "Mistral Large (Mistral)": "mistralai/mistral-large-2411"
+}
+
+# 6. Sidebar System Control & Interactive Model Selector
 with st.sidebar:
     st.title("⚙️ System Control")
-    st.write("● **Status:** Normal Operational Parameters")
-    st.write("● **Model:** Groq Llama 3 High-Speed")
+    st.markdown("● **Status:** Gateway Online")
+    
+    selected_model_label = st.selectbox(
+        "🧠 Neural Model Core",
+        options=list(MODEL_OPTIONS.keys()),
+        index=0
+    )
+    
+    selected_model_id = MODEL_OPTIONS[selected_model_label]
+    st.caption(f"Active Provider ID:\n`{selected_model_id}`")
+    st.divider()
+
     if st.button("🗑️ Purge Consciousness Log", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# 6. Display Chat History
+# 7. Render Messages with "⚡" as the Assistant Avatar
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
-# 7. Chat Input
+# 8. Chat Input Prompt
 prompt = st.chat_input("Boss, what do you need me to analyze?")
 
 if prompt:
@@ -176,10 +196,10 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="⚡"):
-        with st.spinner("⚡ F.R.I.D.A.Y. is processing neural pathways..."):
+        with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
             try:
                 client = OpenAI(
-                    base_url="https://api.groq.com/openai/v1",
+                    base_url="https://openrouter.ai/api/v1",
                     api_key=api_key,
                 )
 
@@ -192,28 +212,22 @@ if prompt:
                     {"role": m["role"], "content": m["content"]} for m in st.session_state.messages
                 ]
 
-                available_models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"]
-                reply = None
-                last_error = None
-
-                for model_name in available_models:
-                    try:
-                        response = client.chat.completions.create(
-                            model=model_name,
-                            messages=conversation_history
-                        )
-                        reply = response.choices[0].message.content
-                        if reply:
-                            break
-                    except Exception as model_err:
-                        last_error = model_err
-                        continue
+                response = client.chat.completions.create(
+                    model=selected_model_id,
+                    messages=conversation_history,
+                    extra_headers={
+                        "HTTP-Referer": "https://friday-ai.streamlit.app",
+                        "X-Title": "FRIDAY AI HUD"
+                    }
+                )
+                
+                reply = response.choices[0].message.content
 
                 if reply:
                     st.markdown(reply)
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                 else:
-                    st.error(f"Execution Error: {last_error}")
+                    st.error("Execution Error: Empty response received from model provider.")
 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Gateway Error: {e}")
