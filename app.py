@@ -152,9 +152,9 @@ if not api_key:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Model Registry including Text, Vision, and Image models supported by OpenRouter
+# Model Registry with the correct OpenRouter slug for Flux 1 Schnell
 MODEL_OPTIONS = {
-    "Flux Schnell (Fast Image Generation)": "black-forest-labs/flux-schnell",
+    "Flux 1 Schnell (Fast Image Generation)": "black-forest-labs/flux-1-schnell",
     "Claude 3.5 Sonnet (Advanced Intelligence)": "anthropic/claude-3.5-sonnet",
     "GPT-4o (OpenAI)": "openai/gpt-4o",
     "Gemini Flash 1.5 (Google)": "google/gemini-flash-1.5",
@@ -214,7 +214,6 @@ if prompt:
                     {"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"
                 ]
 
-                # OpenRouter routes image generation models via chat completions when returning image markdown URLs or standard outputs
                 response = client.chat.completions.create(
                     model=selected_model_id,
                     messages=conversation_history,
@@ -226,7 +225,6 @@ if prompt:
                 
                 reply = response.choices[0].message.content
                 
-                # Check if the output contains an image URL or markdown image
                 if reply:
                     st.markdown(reply)
                     st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -234,5 +232,4 @@ if prompt:
                     st.error("Execution Error: Empty response received.")
 
             except Exception as e:
-                # Fallback handler if model slug changes
                 st.error(f"Gateway Error: {e}")
