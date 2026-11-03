@@ -152,7 +152,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE & HISTORY ACTIVE</div>
+        <div class="hud-status">● MASTER PROGRAMMING & NEURAL CORE ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -179,7 +179,7 @@ MODEL_OPTIONS = {
     "DeepSeek V3": "deepseek/deepseek-chat"
 }
 
-# Sidebar Navigation & Session Management with Deletion Support
+# Sidebar Navigation & Session Management
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
@@ -192,7 +192,6 @@ with st.sidebar:
     st.divider()
     st.markdown("### 🕒 Recent Chats")
     
-    # Display chat sessions with a delete button for each
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
         col_select, col_del = st.columns([4, 1])
@@ -201,11 +200,9 @@ with st.sidebar:
                 st.session_state.current_session = s_name
                 st.rerun()
         with col_del:
-            # Prevent deleting if it's the only remaining chat
             if len(st.session_state.sessions) > 1:
                 if st.button("🗑️", key=f"del_{s_name}", help=f"Delete {s_name}"):
                     del st.session_state.sessions[s_name]
-                    # If we deleted the active session, switch to another active one
                     if st.session_state.current_session == s_name:
                         st.session_state.current_session = list(st.session_state.sessions.keys())[-1]
                     st.rerun()
@@ -230,7 +227,6 @@ with st.sidebar:
         st.session_state.current_session = "New Chat"
         st.rerun()
 
-# Ensure current session exists
 if st.session_state.current_session not in st.session_state.sessions:
     st.session_state.current_session = list(st.session_state.sessions.keys())[0]
 
@@ -246,9 +242,9 @@ for message in current_messages:
             st.markdown(message["content"])
 
 # ==========================================
-# 4. User Interaction & Core AI Processing
+# 4. User Interaction & Expert Coding Core
 # ==========================================
-prompt = st.chat_input(f"Ask F.R.I.D.A.Y. ({st.session_state.current_session})...")
+prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
@@ -286,16 +282,24 @@ if prompt:
                     "caption": f"Generated for Boss: {prompt}"
                 })
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label}..."):
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
                 try:
                     client = OpenAI(
                         base_url="https://openrouter.ai/api/v1",
                         api_key=api_key,
                     )
 
+                    # Enhanced System Instructions establishing expert programming capability across all languages
                     system_instruction = {
                         "role": "system",
-                        "content": "You are F.R.I.D.A.Y., Stark Industries AI. Articulate, intelligent, polite, efficient. Tactical demeanor. Address user as Boss."
+                        "content": (
+                            "You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
+                            "You are a world-class expert programmer proficient in ALL programming languages, frameworks, "
+                            "algorithms, embedded systems (Arduino, C++), web development (HTML, CSS, JS, React, Streamlit), "
+                            "databases (MySQL, PostgreSQL), and game engines (Unreal Engine). "
+                            "When writing code, provide clean, bug-free, production-ready code blocks with detailed comments "
+                            "and clear explanations. Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
+                        )
                     }
                     
                     filtered_history = [
@@ -331,7 +335,9 @@ if prompt:
                         st.markdown(reply)
                         
                         if enable_voice:
-                            clean_speech = reply.replace('"', '\\"').replace('\n', ' ')
+                            # Keep spoken response concise for code answers
+                            speech_text = "Here is the code solution, Boss." if "```" in reply else reply
+                            clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
                                 <script>
                                     window.speechSynthesis.cancel();
