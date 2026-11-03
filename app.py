@@ -29,7 +29,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Modern HUD Styling & Custom Input Bar CSS
+# 2. Modern HUD Styling & Sidebar History CSS
 # ==========================================
 st.markdown("""
     <style>
@@ -152,12 +152,12 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE & VOICE SYNTHESIS ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE & HISTORY ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Backend & Core Setup
+# 3. Backend & Multi-Session History Setup
 # ==========================================
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
@@ -165,8 +165,12 @@ if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Initialize multi-session chat history store
+if "sessions" not in st.session_state:
+    st.session_state.sessions = {"New Chat": []}
+
+if "current_session" not in st.session_state:
+    st.session_state.current_session = "New Chat"
 
 MODEL_OPTIONS = {
     "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
@@ -176,10 +180,29 @@ MODEL_OPTIONS = {
     "DeepSeek V3": "deepseek/deepseek-chat"
 }
 
-# Sidebar Controls
+# Sidebar Gemini-Style Navigation & History
 with st.sidebar:
-    st.title("⚙️ System Control")
-    st.markdown("● **Status:** Gateway Online")
+    st.title("⚡ F.R.I.D.A.Y. Core")
+    
+    # New Chat Button
+    if st.button("➕ New Chat", use_container_width=True):
+        new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
+        st.session_state.sessions[new_title] = []
+        st.session_state.current_session = new_title
+        st.rerun()
+
+    st.divider()
+    st.markdown("### 🕒 Recent Chats")
+    
+    # Display chat sessions as selectable buttons
+    session_names = list(st.session_state.sessions.keys())
+    for s_name in reversed(session_names):
+        if st.button(s_name, use_container_width=True, key=f"hist_{s_name}"):
+            st.session_state.current_session = s_name
+            st.rerun()
+
+    st.divider()
+    st.markdown("⚙️ **System Settings**")
     
     selected_model_label = st.selectbox(
         "🧠 Active Model Core",
@@ -188,18 +211,19 @@ with st.sidebar:
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
-    st.caption(f"Provider ID: `{selected_model_id}`")
-    st.divider()
-
     enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
     st.divider()
 
-    if st.button("🗑️ Purge Consciousness Log", use_container_width=True):
-        st.session_state.messages = []
+    if st.button("🗑️ Purge All Logs", use_container_width=True):
+        st.session_state.sessions = {"New Chat": []}
+        st.session_state.current_session = "New Chat"
         st.rerun()
 
-# Render Chat History
-for message in st.session_state.messages:
+# Get current messages for active session
+current_messages = st.session_state.sessions[st.session_state.current_session]
+
+# Render Chat History for Active Session
+for message in current_messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
         if message.get("type") == "image":
@@ -208,44 +232,19 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # ==========================================
-# 4. Gemini-Style Integrated Control Bar
+# 4. User Interaction & Core AI Processing
 # ==========================================
-col_mic, col_status = st.columns([1, 4])
+prompt = st.chat_input(f"Ask F.R.I.D.A.Y. ({st.session_state.current_session})...")
 
-with col_mic:
-    # Voice transcription trigger button
-    record_voice = st.button("🎙️ Voice Mic", use_container_width=True)
-
-with col_status:
-    st.caption(f"Active Model: **{selected_model_label}** | Type below or use Mic")
-
-# Browser Speech Recognition Script injected if mic is clicked
-if record_voice:
-    st.components.v1.html("""
-        <script>
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'en-US';
-                recognition.start();
-                recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    alert("Transcribed: " + text + " (Type this in chat prompt below)");
-                };
-            } else {
-                alert("Speech recognition not supported in this browser wrapper.");
-            }
-        </script>
-    """, height=0)
-
-# Standard Streamlit chat input (clean bar at the bottom)
-prompt = st.chat_input("Ask F.R.I.D.A.Y. or type your prompt here...")
-
-# ==========================================
-# 5. Core AI Processing & Synthesis
-# ==========================================
 if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    # Auto-name session based on first query if it's currently "New Chat" or "Chat Session..."
+    if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
+        new_title = prompt[:28] + "..." if len(prompt) > 28 else prompt
+        st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
+        st.session_state.current_session = new_title
+
+    st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
+    
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
@@ -267,7 +266,7 @@ if prompt:
                 image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                st.session_state.messages.append({
+                st.session_state.sessions[st.session_state.current_session].append({
                     "role": "assistant", 
                     "content": image_url, 
                     "type": "image", 
@@ -288,7 +287,7 @@ if prompt:
                     
                     filtered_history = [
                         {"role": m["role"], "content": m["content"]} 
-                        for m in st.session_state.messages 
+                        for m in st.session_state.sessions[st.session_state.current_session] 
                         if m.get("type") != "image"
                     ]
                     
@@ -330,7 +329,8 @@ if prompt:
                                 </script>
                             """, unsafe_allow_html=True)
 
-                        st.session_state.messages.append({"role": "assistant", "content": reply})
+                        st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
+                        st.rerun()
                     else:
                         st.error(f"Gateway Error: {last_error}")
 
