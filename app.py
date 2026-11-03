@@ -8,29 +8,21 @@ from openai import OpenAI
 from PIL import Image
 
 # ==========================================
-# 1. Page Configuration & Dynamic Favicon Look-up
+# 1. Page Configuration & Dynamic Favicon
 # ==========================================
-
-# Base directory relative to this file
 BASE_DIR = Path(__file__).resolve().parent
 favicon = None
 
-# Scan for common favicon filenames in the repository root
 for name in ("friday_favicon.png", "friday_favicon.ico", "friday_favicon", "friday.png", "friday.jpg"):
     candidate = BASE_DIR / name
     try:
         if candidate.is_file():
-            # Open the image as a PIL Image object
             with Image.open(candidate) as image:
                 favicon = image.copy()
-            # If successfully found and opened, break the loop
             break
     except (OSError, ValueError):
-        # Ignore errors and check next name
         pass
 
-# Fallback: A relevant emoji if no image file is found
-# Do not crash the app if the favicon image is missing from the repo.
 st.set_page_config(
     page_title="F.R.I.D.A.Y. AI",
     page_icon=favicon if favicon is not None else "⚡",
@@ -38,9 +30,8 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Advanced Styling & Voice Synthesis JS
+# 2. Modern HUD Styling & JS Voice Controller
 # ==========================================
-# Inject Custom FRIDAY Blue Geometric HUD Styling & Voice Synthesizer JS
 st.markdown("""
     <style>
     /* Dark Sci-Fi Background */
@@ -60,32 +51,29 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    /* Shared Wrapper to Perfectly Center Dotted Ring Around Core */
     .friday-reactor-wrapper {
         position: relative;
-        width: 150px;
-        height: 150px;
+        width: 140px;
+        height: 140px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    /* Revolving Dotted Outer Ring */
     .friday-ring-outer {
         position: absolute;
-        width: 150px;
-        height: 150px;
+        width: 140px;
+        height: 140px;
         border-radius: 50%;
         border: 2px dashed rgba(0, 240, 255, 0.7);
         animation: rotateDashedRing 10s linear infinite;
         box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
     }
 
-    /* Core Pulsing Blue Geometric 'F' */
     .friday-core {
         position: absolute;
-        width: 100px;
-        height: 100px;
+        width: 95px;
+        height: 95px;
         border-radius: 50%;
         background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(1, 4, 9, 0.95) 80%);
         border: 2px solid #00F0FF;
@@ -96,16 +84,14 @@ st.markdown("""
         animation: pulseFRIDAY 3s infinite ease-in-out;
     }
 
-    /* Central Symbol - The Geometric 'F' */
     .friday-symbol {
-        font-size: 3rem;
+        font-size: 2.8rem;
         font-weight: 900;
         color: #00F0FF;
         text-shadow: 0 0 20px #00F0FF;
         font-family: 'Courier New', monospace;
     }
 
-    /* CSS Keyframe Animations */
     @keyframes rotateDashedRing {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
@@ -117,29 +103,28 @@ st.markdown("""
         100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
     }
 
-    /* Glow Header Text */
     .hud-title {
         color: #00F0FF;
-        font-size: 2.8rem;
+        font-size: 2.6rem;
         font-weight: 900;
         letter-spacing: 5px;
         text-shadow: 0 0 20px rgba(0, 240, 255, 1);
-        margin-top: 15px;
+        margin-top: 12px;
         margin-bottom: 2px;
         text-align: center;
     }
 
     .hud-status {
         color: #10B981;
-        font-size: 1.0rem;
+        font-size: 0.95rem;
         letter-spacing: 2px;
         font-weight: 600;
         text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
 
-    /* Custom FRIDAY Chat Cards */
+    /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
         background: rgba(1, 4, 9, 0.8) !important;
         border: 1px solid rgba(0, 240, 255, 0.4) !important;
@@ -158,7 +143,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Render FRIDAY Header HUD Component
+# Header HUD
 st.markdown("""
     <div class="friday-logo-container">
         <div class="friday-reactor-wrapper">
@@ -168,58 +153,53 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MULTI-MODEL NEURAL CORE, IMAGE SYNTHESIS & VOICE ACTIVE</div>
+        <div class="hud-status">● MULTI-MODEL NEURAL CORE & VOICE SYNTHESIS ACTIVE</div>
     </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Backend & Core Initialization
+# 3. Backend & Core Setup
 # ==========================================
-
-# OpenRouter API Key Fetch
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
 if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# Session State Setup
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Verified Active OpenRouter Chat Models
 MODEL_OPTIONS = {
-    "Claude 3.5 Sonnet (Anthropic)": "anthropic/claude-3.5-sonnet",
-    "GPT-4o (OpenAI)": "openai/gpt-4o",
-    "Gemini Flash 1.5 (Google)": "google/gemini-flash-1.5",
-    "Llama 3.3 70B Instruct (Meta)": "meta-llama/llama-3.3-70b-instruct",
-    "DeepSeek V3 (DeepSeek)": "deepseek/deepseek-chat"
+    "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
+    "GPT-4o": "openai/gpt-4o",
+    "Gemini Flash 1.5": "google/gemini-flash-1.5",
+    "Llama 3.3 70B": "meta-llama/llama-3.3-70b-instruct",
+    "DeepSeek V3": "deepseek/deepseek-chat"
 }
 
-# Sidebar System Control & Voice Settings
+# Sidebar Controls
 with st.sidebar:
     st.title("⚙️ System Control")
     st.markdown("● **Status:** Gateway Online")
     
     selected_model_label = st.selectbox(
-        "🧠 Neural Model Core",
+        "🧠 Active Model Core",
         options=list(MODEL_OPTIONS.keys()),
         index=3  
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
-    st.caption(f"Active Provider ID:\n`{selected_model_id}`")
+    st.caption(f"Provider ID: `{selected_model_id}`")
     st.divider()
 
-    # Voice output toggle
-    enable_voice = st.toggle("🔊 Enable Voice Synthesis (TTS)", value=True)
+    enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
     st.divider()
 
     if st.button("🗑️ Purge Consciousness Log", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# Render Message History (Supporting Text and Images)
+# Render Chat History
 for message in st.session_state.messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
@@ -229,33 +209,42 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # ==========================================
-# 4. User Interaction & Core Synthesis
+# 4. Gemini-Style Chat Bar Control Panel
 # ==========================================
 
-# Voice Input Widget (Microphone Recording)
-audio_value = st.audio_input("🎙️ Speak to F.R.I.D.A.Y. (Voice Input)")
+# Top toolbar control row resembling Gemini's integrated bar
+col1, col2 = st.columns([1, 4])
 
-# Text Input Widget
-prompt = st.chat_input("Boss, what do you need me to analyze or create?")
+with col1:
+    voice_mic_click = st.button("🎙️ Tap to Speak", use_container_width=True)
 
-# Handle audio input if user spoke into mic
-if audio_value is not None:
-    # Transcribe using OpenAI Whisper API via OpenRouter
-    with st.spinner("⚡ F.R.I.D.A.Y. is decoding audio transmission..."):
-        try:
-            client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
-            # Use Whisper on OpenRouter to transcribe the audio bytes directly
-            transcription = client.audio.transcriptions.create(
-                model="openai/whisper-1",
-                file=("audio.wav", audio_value.read())
-            )
-            prompt = transcription.text
-        except Exception as whisper_err:
-            # Fallback for voice input error
-            st.warning(f"Voice input failed: {whisper_err}. Please use text input.")
-            prompt = None
+with col2:
+    st.caption(f"Active Mode: **{selected_model_label}** | Type below or use Mic")
 
-# Proceed if a valid prompt exists
+# Web Speech API JavaScript for Microphone Input
+if voice_mic_click:
+    st.components.v1.html("""
+        <script>
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.start();
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const inputElement = window.parent.document.querySelector('textarea[aria-label="Ask F.R.I.D.A.Y."]');
+                if (inputElement) {
+                    inputElement.value = transcript;
+                    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+        </script>
+    """, height=0)
+
+prompt = st.chat_input("Ask F.R.I.D.A.Y.")
+
+# ==========================================
+# 5. Core AI Processing & Synthesis
+# ==========================================
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
@@ -264,13 +253,11 @@ if prompt:
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
         
-        # Broad trigger for image/drawing requests
         image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
-        # Handle Image Requests
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-res visual assets..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -278,7 +265,6 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
-                # Pass your exact description to the visual synthesizer (Flux Model via Pollinations)
                 image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
@@ -288,10 +274,8 @@ if prompt:
                     "type": "image", 
                     "caption": f"Generated for Boss: {prompt}"
                 })
-        
-        # Handle Text Requests
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label.split(' ')[0]}..."):
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is querying {selected_model_label}..."):
                 try:
                     client = OpenAI(
                         base_url="https://openrouter.ai/api/v1",
@@ -300,7 +284,7 @@ if prompt:
 
                     system_instruction = {
                         "role": "system",
-                        "content": "You are F.R.I.D.A.Y., Stark Industries AI. Articulate, intelligent, polite, efficient. Tactical demeanor. technically precise. address user as Boss."
+                        "content": "You are F.R.I.D.A.Y., Stark Industries AI. Articulate, intelligent, polite, efficient. Tactical demeanor. Address user as Boss."
                     }
                     
                     filtered_history = [
@@ -315,7 +299,6 @@ if prompt:
                     reply = None
                     last_error = None
 
-                    # Fallback core query logic
                     for model_to_try in fallback_sequence:
                         try:
                             response = client.chat.completions.create(
@@ -334,26 +317,20 @@ if prompt:
                             continue
 
                     if reply:
-                        # Output reply in chat
                         st.markdown(reply)
                         
-                        # Handle Text-to-Speech (TTS) via Browser Web Speech API
                         if enable_voice:
-                            # Sanitize reply for JavaScript injection
                             clean_speech = reply.replace('"', '\\"').replace('\n', ' ')
-                            # Inject browser speech synthesis script
                             st.markdown(f"""
                                 <script>
-                                    // Voice check to stop speaking previous before a new speech starts
                                     window.speechSynthesis.cancel();
                                     const utterance = new SpeechSynthesisUtterance("{clean_speech}");
-                                    utterance.rate = 1.0; // Normal speech rate
-                                    utterance.pitch = 1.0; // Normal pitch
+                                    utterance.rate = 1.0;
+                                    utterance.pitch = 1.0;
                                     window.speechSynthesis.speak(utterance);
                                 </script>
                             """, unsafe_allow_html=True)
 
-                        # Store reply in session state
                         st.session_state.messages.append({"role": "assistant", "content": reply})
                     else:
                         st.error(f"Gateway Error: {last_error}")
