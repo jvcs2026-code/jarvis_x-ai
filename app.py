@@ -30,7 +30,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Modern HUD Styling & JS Voice Controller
+# 2. Modern HUD Styling
 # ==========================================
 st.markdown("""
     <style>
@@ -98,9 +98,9 @@ st.markdown("""
     }
 
     @keyframes pulseFRIDAY {
-        0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
-        100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
+        0% { shadow: 0 0 20px #00F0FF; }
+        50% { box-shadow: 0 0 50px #00F0FF; }
+        100% { box-shadow: 0 0 20px #00F0FF; }
     }
 
     .hud-title {
@@ -209,38 +209,62 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # ==========================================
-# 4. Gemini-Style Chat Bar Control Panel
+# 4. Working Embedded Voice & Text Input
 # ==========================================
+voice_input_html = """
+<div style="background: rgba(1, 4, 9, 0.9); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+    <button id="micBtn" style="background: #00F0FF; color: #000; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        🎙️ Click to Speak
+    </button>
+    <span id="statusText" style="color: #00F0FF; font-family: sans-serif; font-size: 0.9rem;">Speech Recognition Offline</span>
+</div>
 
-# Top toolbar control row resembling Gemini's integrated bar
-col1, col2 = st.columns([1, 4])
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const statusText = document.getElementById('statusText');
 
-with col1:
-    voice_mic_click = st.button("🎙️ Tap to Speak", use_container_width=True)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
 
-with col2:
-    st.caption(f"Active Mode: **{selected_model_label}** | Type below or use Mic")
-
-# Web Speech API JavaScript for Microphone Input
-if voice_mic_click:
-    st.components.v1.html("""
-        <script>
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-US';
+        micBtn.onclick = () => {
             recognition.start();
-            
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                const inputElement = window.parent.document.querySelector('textarea[aria-label="Ask F.R.I.D.A.Y."]');
-                if (inputElement) {
-                    inputElement.value = transcript;
-                    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            };
-        </script>
-    """, height=0)
+            statusText.innerText = "Listening... Speak now, Boss!";
+            statusText.style.color = "#10B981";
+        };
 
-prompt = st.chat_input("Ask F.R.I.D.A.Y.")
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            statusText.innerText = "Transcribed: " + transcript;
+            statusText.style.color = "#00F0FF";
+            
+            // Send transcript back to Streamlit input text area
+            if (window.parent) {
+                const inputs = window.parent.document.querySelectorAll('textarea');
+                for (let input of inputs) {
+                    input.value = transcript;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        };
+
+        recognition.onerror = (event) => {
+            statusText.innerText = "Error listening: " + event.error;
+            statusText.style.color = "#EF4444";
+        };
+    } else {
+        statusText.innerText = "Browser Web Speech API not supported on this browser.";
+        statusText.style.color = "#EF4444";
+    }
+</script>
+"""
+
+st.components.v1.html(voice_input_html, height=75)
+
+prompt = st.chat_input("Ask F.R.I.D.A.Y. or use the microphone button above...")
 
 # ==========================================
 # 5. Core AI Processing & Synthesis
