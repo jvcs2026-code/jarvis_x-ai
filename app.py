@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from io import BytesIO
 import urllib.parse
 import requests
 import streamlit as st
@@ -30,7 +29,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Modern HUD Styling
+# 2. Modern HUD Styling & Custom Input Bar CSS
 # ==========================================
 st.markdown("""
     <style>
@@ -209,16 +208,38 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # ==========================================
-# 4. Streamlit Native Audio Recorder (Guaranteed Working)
+# 4. Gemini-Style Integrated Control Bar
 # ==========================================
-# Using Streamlit's official audio recorder component which bypasses browser sandbox permission blocks securely.
-audio_file = st.audio_input("🎙️ Record Voice Input for F.R.I.D.A.Y.")
+col_mic, col_status = st.columns([1, 4])
 
+with col_mic:
+    # Voice transcription trigger button
+    record_voice = st.button("🎙️ Voice Mic", use_container_width=True)
+
+with col_status:
+    st.caption(f"Active Model: **{selected_model_label}** | Type below or use Mic")
+
+# Browser Speech Recognition Script injected if mic is clicked
+if record_voice:
+    st.components.v1.html("""
+        <script>
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.start();
+                recognition.onresult = function(event) {
+                    const text = event.results[0][0].transcript;
+                    alert("Transcribed: " + text + " (Type this in chat prompt below)");
+                };
+            } else {
+                alert("Speech recognition not supported in this browser wrapper.");
+            }
+        </script>
+    """, height=0)
+
+# Standard Streamlit chat input (clean bar at the bottom)
 prompt = st.chat_input("Ask F.R.I.D.A.Y. or type your prompt here...")
-
-if audio_file is not None:
-    # When user records audio, notify and simulate a transcribed voice command or process speech
-    prompt = "Hello F.R.I.D.A.Y., running voice diagnostics."
 
 # ==========================================
 # 5. Core AI Processing & Synthesis
