@@ -165,7 +165,6 @@ if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# Initialize multi-session chat history store
 if "sessions" not in st.session_state:
     st.session_state.sessions = {"New Chat": []}
 
@@ -180,11 +179,10 @@ MODEL_OPTIONS = {
     "DeepSeek V3": "deepseek/deepseek-chat"
 }
 
-# Sidebar Gemini-Style Navigation & History
+# Sidebar Navigation & Session Management with Deletion Support
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
-    # New Chat Button
     if st.button("➕ New Chat", use_container_width=True):
         new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
         st.session_state.sessions[new_title] = []
@@ -194,12 +192,25 @@ with st.sidebar:
     st.divider()
     st.markdown("### 🕒 Recent Chats")
     
-    # Display chat sessions as selectable buttons
+    # Display chat sessions with a delete button for each
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
-        if st.button(s_name, use_container_width=True, key=f"hist_{s_name}"):
-            st.session_state.current_session = s_name
-            st.rerun()
+        col_select, col_del = st.columns([4, 1])
+        with col_select:
+            if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
+                st.session_state.current_session = s_name
+                st.rerun()
+        with col_del:
+            # Prevent deleting if it's the only remaining chat
+            if len(st.session_state.sessions) > 1:
+                if st.button("🗑️", key=f"del_{s_name}", help=f"Delete {s_name}"):
+                    del st.session_state.sessions[s_name]
+                    # If we deleted the active session, switch to another active one
+                    if st.session_state.current_session == s_name:
+                        st.session_state.current_session = list(st.session_state.sessions.keys())[-1]
+                    st.rerun()
+            else:
+                st.button("🔒", disabled=True, key=f"lock_{s_name}", help="Cannot delete last session")
 
     st.divider()
     st.markdown("⚙️ **System Settings**")
@@ -219,7 +230,10 @@ with st.sidebar:
         st.session_state.current_session = "New Chat"
         st.rerun()
 
-# Get current messages for active session
+# Ensure current session exists
+if st.session_state.current_session not in st.session_state.sessions:
+    st.session_state.current_session = list(st.session_state.sessions.keys())[0]
+
 current_messages = st.session_state.sessions[st.session_state.current_session]
 
 # Render Chat History for Active Session
@@ -237,7 +251,6 @@ for message in current_messages:
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. ({st.session_state.current_session})...")
 
 if prompt:
-    # Auto-name session based on first query if it's currently "New Chat" or "Chat Session..."
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
         new_title = prompt[:28] + "..." if len(prompt) > 28 else prompt
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
