@@ -171,12 +171,13 @@ if "sessions" not in st.session_state:
 if "current_session" not in st.session_state:
     st.session_state.current_session = "New Chat"
 
+# Updated with latest high-performance models and OpenRouter nitro routing suffix for max speed
 MODEL_OPTIONS = {
-    "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
-    "GPT-4o": "openai/gpt-4o",
-    "Gemini Flash 1.5": "google/gemini-flash-1.5",
-    "Llama 3.3 70B": "meta-llama/llama-3.3-70b-instruct",
-    "DeepSeek V3": "deepseek/deepseek-chat"
+    "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
+    "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
+    "Gemini 3.8 Flash (Ultra-Fast)": "google/gemini-3.8-flash:nitro",
+    "DeepSeek V4.1 Flash (Code Specialist)": "deepseek/deepseek-v4.1-flash:nitro",
+    "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
 }
 
 # Sidebar Navigation & Session Management
@@ -215,7 +216,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Active Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=3  
+        index=2  # Default to Gemini 3.8 Flash for instant speed
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -310,21 +311,38 @@ if prompt:
                     
                     conversation_history = [system_instruction] + filtered_history
 
-                    fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
+                    fallback_sequence = [
+                        selected_model_id, 
+                        "google/gemini-3.8-flash:nitro", 
+                        "deepseek/deepseek-v4.1-flash:nitro"
+                    ]
                     reply = None
                     last_error = None
 
                     for model_to_try in fallback_sequence:
                         try:
+                            # Enable streaming for instant token-by-token rendering speed
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
+                                stream=True,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
                                     "X-Title": "FRIDAY AI HUD"
                                 }
                             )
-                            reply = response.choices[0].message.content
+                            
+                            # Stream tokens into UI placeholder
+                            response_placeholder = st.empty()
+                            full_streamed_content = ""
+                            for chunk in response:
+                                delta = chunk.choices[0].delta.content
+                                if delta:
+                                    full_streamed_content += delta
+                                    response_placeholder.markdown(full_streamed_content + "▌")
+                            
+                            reply = full_streamed_content
+                            response_placeholder.markdown(reply)
                             if reply:
                                 break
                         except Exception as model_err:
@@ -332,10 +350,7 @@ if prompt:
                             continue
 
                     if reply:
-                        st.markdown(reply)
-                        
                         if enable_voice:
-                            # Keep spoken response concise for code answers
                             speech_text = "Here is the code solution, Boss." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
@@ -349,7 +364,6 @@ if prompt:
                             """, unsafe_allow_html=True)
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
-                        st.rerun()
                     else:
                         st.error(f"Gateway Error: {last_error}")
 
