@@ -6,352 +6,104 @@ import streamlit as st
 from openai import OpenAI
 from PIL import Image
 
-# ==========================================
-# 1. Page Configuration & Dynamic Favicon
-# ==========================================
-BASE_DIR = Path(__file__).resolve().parent
-favicon = None
-
-for name in ("friday_favicon.png", "friday_favicon.ico", "friday_favicon", "friday.png", "friday.jpg"):
-    candidate = BASE_DIR / name
-    try:
-        if candidate.is_file():
-            with Image.open(candidate) as image:
-                favicon = image.copy()
-            break
-    except (OSError, ValueError):
-        pass
-
+# Page Config & Title
 st.set_page_config(
-    page_title="F.R.I.D.A.Y. AI",
-    page_icon=favicon if favicon is not None else "⚡",
+    page_title="F.R.I.D.A.Y. AI Assistant",
+    page_icon="⚡",
     layout="wide"
 )
 
-# ==========================================
-# 2. Modern HUD Styling & Sidebar History CSS
-# ==========================================
-st.markdown("""
-    <style>
-    /* Dark Sci-Fi Background */
-    .stApp {
-        background: radial-gradient(circle at center, #010409 0%, #000000 100%);
-        color: #00F0FF;
-        font-family: 'Segoe UI', Roboto, sans-serif;
-    }
+# Initialize OpenAI Client (Uses environment variable or fallback input)
+api_key = os.environ.get("OPENAI_API_KEY", "")
+client = OpenAI(api_key=api_key) if api_key else None
 
-    /* Centered F.R.I.D.A.Y. Logo Container */
-    .friday-logo-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 10px;
-        margin-bottom: 15px;
-    }
+# Initialize Session State
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "F.R.I.D.A.Y. systems online, Boss. How can I assist you today?"}
+    ]
 
-    .friday-reactor-wrapper {
-        position: relative;
-        width: 130px;
-        height: 130px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .friday-ring-outer {
-        position: absolute;
-        width: 130px;
-        height: 130px;
-        border-radius: 50%;
-        border: 2px dashed rgba(0, 240, 255, 0.7);
-        animation: rotateDashedRing 10s linear infinite;
-        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-    }
-
-    .friday-core {
-        position: absolute;
-        width: 85px;
-        height: 85px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(1, 4, 9, 0.95) 80%);
-        border: 2px solid #00F0FF;
-        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: pulseFRIDAY 3s infinite ease-in-out;
-    }
-
-    .friday-symbol {
-        font-size: 2.5rem;
-        font-weight: 900;
-        color: #00F0FF;
-        text-shadow: 0 0 20px #00F0FF;
-        font-family: 'Courier New', monospace;
-    }
-
-    @keyframes rotateDashedRing {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    @keyframes pulseFRIDAY {
-        0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
-        100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-    }
-
-    .hud-title {
-        color: #00F0FF;
-        font-size: 2.4rem;
-        font-weight: 900;
-        letter-spacing: 5px;
-        text-shadow: 0 0 20px rgba(0, 240, 255, 1);
-        margin-top: 10px;
-        margin-bottom: 2px;
-        text-align: center;
-    }
-
-    .hud-status {
-        color: #10B981;
-        font-size: 0.9rem;
-        letter-spacing: 2px;
-        font-weight: 600;
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    /* Custom Chat Message Cards */
-    [data-testid="stChatMessage"] {
-        background: rgba(1, 4, 9, 0.8) !important;
-        border: 1px solid rgba(0, 240, 255, 0.4) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
-        margin-bottom: 12px !important;
-    }
-
-    [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
-        border-left: 4px solid #00F0FF !important;
-    }
-
-    [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #10B981 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# Header HUD
-st.markdown("""
-    <div class="friday-logo-container">
-        <div class="friday-reactor-wrapper">
-            <div class="friday-ring-outer"></div>
-            <div class="friday-core">
-                <span class="friday-symbol">F</span>
-            </div>
-        </div>
-        <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MASTER PROGRAMMING & NEURAL CORE ACTIVE</div>
-    </div>
-""", unsafe_allow_html=True)
-
-# ==========================================
-# 3. Backend & Multi-Session History Setup
-# ==========================================
-api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
-
-if not api_key:
-    st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
-    st.stop()
-
-if "sessions" not in st.session_state:
-    st.session_state.sessions = {"New Chat": []}
-
-if "current_session" not in st.session_state:
-    st.session_state.current_session = "New Chat"
-
-MODEL_OPTIONS = {
-    "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
-    "GPT-4o": "openai/gpt-4o",
-    "Gemini Flash 1.5": "google/gemini-flash-1.5",
-    "Llama 3.3 70B": "meta-llama/llama-3.3-70b-instruct",
-    "DeepSeek V3": "deepseek/deepseek-chat"
-}
-
-# Sidebar Navigation & Session Management
+# Sidebar Configuration
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
-    if st.button("➕ New Chat", use_container_width=True):
-        new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
-        st.session_state.sessions[new_title] = []
-        st.session_state.current_session = new_title
+    if st.button("+ New Chat", use_container_width=True):
+        st.session_state.messages = [
+            {"role": "assistant", "content": "F.R.I.D.A.Y. systems online, Boss. How can I assist you today?"}
+        ]
         st.rerun()
 
-    st.divider()
-    st.markdown("### 🕒 Recent Chats")
+    st.markdown("---")
+    st.subheader("⚙️ System Settings")
     
-    session_names = list(st.session_state.sessions.keys())
-    for s_name in reversed(session_names):
-        col_select, col_del = st.columns([4, 1])
-        with col_select:
-            if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
-                st.session_state.current_session = s_name
-                st.rerun()
-        with col_del:
-            if len(st.session_state.sessions) > 1:
-                if st.button("🗑️", key=f"del_{s_name}", help=f"Delete {s_name}"):
-                    del st.session_state.sessions[s_name]
-                    if st.session_state.current_session == s_name:
-                        st.session_state.current_session = list(st.session_state.sessions.keys())[-1]
-                    st.rerun()
-            else:
-                st.button("🔒", disabled=True, key=f"lock_{s_name}", help="Cannot delete last session")
-
-    st.divider()
-    st.markdown("⚙️ **System Settings**")
-    
-    selected_model_label = st.selectbox(
-        "🧠 Active Model Core",
-        options=list(MODEL_OPTIONS.keys()),
-        index=3  
+    # Model Selection
+    selected_model = st.selectbox(
+        "Select Active Engine:",
+        ["gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet", "deepseek-chat"],
+        index=0
     )
     
-    selected_model_id = MODEL_OPTIONS[selected_model_label]
-    enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
-    st.divider()
+    tts_enabled = st.toggle("🔊 Speak Answers Aloud (TTS)", value=False)
 
+    st.markdown("---")
     if st.button("🗑️ Purge All Logs", use_container_width=True):
-        st.session_state.sessions = {"New Chat": []}
-        st.session_state.current_session = "New Chat"
+        st.session_state.messages = []
         st.rerun()
 
-if st.session_state.current_session not in st.session_state.sessions:
-    st.session_state.current_session = list(st.session_state.sessions.keys())[0]
+# Display Chat History
+st.title("F.R.I.D.A.Y. Interface")
 
-current_messages = st.session_state.sessions[st.session_state.current_session]
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# Render Chat History for Active Session
-for message in current_messages:
-    avatar = "👤" if message["role"] == "user" else "⚡"
-    with st.chat_message(message["role"], avatar=avatar):
-        if message.get("type") == "image":
-            st.image(message["content"], caption=message.get("caption", ""))
-        else:
-            st.markdown(message["content"])
-
-# ==========================================
-# 4. User Interaction & Expert Coding Core
-# ==========================================
-prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
-
-if prompt:
-    if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
-        new_title = prompt[:28] + "..." if len(prompt) > 28 else prompt
-        st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
-        st.session_state.current_session = new_title
-
-    st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
-    
-    with st.chat_message("user", avatar="👤"):
+# User Input Handling
+if prompt := st.chat_input("Command F.R.I.D.A.Y..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar="⚡"):
-        prompt_lower = prompt.lower()
+    # Generate assistant response with streaming
+    with st.chat_message("assistant"):
+        response_placeholder = st.empty()
+        full_response = ""
         
-        image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
-        is_image_request = any(kw in prompt_lower for kw in image_keywords)
+        try:
+            if client:
+                # High-speed streaming response via OpenAI SDK client
+                stream = client.chat.completions.create(
+                    model=selected_model,
+                    messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+                    stream=True,
+                    temperature=0.3
+                )
+                for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        full_response += content
+                        response_placeholder.markdown(full_response + "▌")
+                response_placeholder.markdown(full_response)
+            else:
+                # Fallback API request if OpenAI client key is not configured
+                payload = {
+                    "messages": st.session_state.messages,
+                    "model": selected_model,
+                    "stream": True,
+                    "temperature": 0.3
+                }
+                response = requests.post("https://text.pollinations.ai/", json=payload, stream=True, timeout=30)
+                if response.status_code == 200:
+                    for chunk in response.iter_content(chunk_size=64, decode_unicode=True):
+                        if chunk:
+                            full_response += chunk
+                            response_placeholder.markdown(full_response + "▌")
+                    response_placeholder.markdown(full_response)
+                else:
+                    full_response = f"⚠️ Server Error ({response.status_code}): Check API Configuration."
+                    response_placeholder.markdown(full_response)
 
-        if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
-                img_prompt = prompt
-                for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
-                    if prompt_lower.startswith(prefix):
-                        img_prompt = prompt[len(prefix):].strip()
-                        break
-                
-                clean_query = img_prompt if img_prompt else prompt
-                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
-                
-                st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                st.session_state.sessions[st.session_state.current_session].append({
-                    "role": "assistant", 
-                    "content": image_url, 
-                    "type": "image", 
-                    "caption": f"Generated for Boss: {prompt}"
-                })
-        else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
-                try:
-                    client = OpenAI(
-                        base_url="https://openrouter.ai/api/v1",
-                        api_key=api_key,
-                    )
+        except Exception as e:
+            full_response = f"⚠️ Error: {str(e)}"
+            response_placeholder.markdown(full_response)
 
-                    # Enhanced System Instructions establishing expert programming capability across all languages
-                    system_instruction = {
-                        "role": "system",
-                        "content": (
-                            "You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
-                            "You are a world-class expert programmer proficient in ALL programming languages, frameworks, "
-                            "algorithms, embedded systems (Arduino, C++), web development (HTML, CSS, JS, React, Streamlit), "
-                            "databases (MySQL, PostgreSQL), and game engines (Unreal Engine). "
-                            "When writing code, provide clean, bug-free, production-ready code blocks with detailed comments "
-                            "and clear explanations. Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
-                        )
-                    }
-                    
-                    filtered_history = [
-                        {"role": m["role"], "content": m["content"]} 
-                        for m in st.session_state.sessions[st.session_state.current_session] 
-                        if m.get("type") != "image"
-                    ]
-                    
-                    conversation_history = [system_instruction] + filtered_history
-
-                    fallback_sequence = [selected_model_id, "meta-llama/llama-3.3-70b-instruct", "google/gemini-flash-1.5"]
-                    reply = None
-                    last_error = None
-
-                    for model_to_try in fallback_sequence:
-                        try:
-                            response = client.chat.completions.create(
-                                model=model_to_try,
-                                messages=conversation_history,
-                                extra_headers={
-                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                    "X-Title": "FRIDAY AI HUD"
-                                }
-                            )
-                            reply = response.choices[0].message.content
-                            if reply:
-                                break
-                        except Exception as model_err:
-                            last_error = model_err
-                            continue
-
-                    if reply:
-                        st.markdown(reply)
-                        
-                        if enable_voice:
-                            # Keep spoken response concise for code answers
-                            speech_text = "Here is the code solution, Boss." if "```" in reply else reply
-                            clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
-                            st.markdown(f"""
-                                <script>
-                                    window.speechSynthesis.cancel();
-                                    const utterance = new SpeechSynthesisUtterance("{clean_speech}");
-                                    utterance.rate = 1.0;
-                                    utterance.pitch = 1.0;
-                                    window.speechSynthesis.speak(utterance);
-                                </script>
-                            """, unsafe_allow_html=True)
-
-                        st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
-                        st.rerun()
-                    else:
-                        st.error(f"Gateway Error: {last_error}")
-
-                except Exception as e:
-                    st.error(f"Gateway Error: {e}")
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
