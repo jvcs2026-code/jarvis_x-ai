@@ -5,6 +5,8 @@ import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image
+import io
+import random
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -29,15 +31,56 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Modern HUD Styling & Sidebar History CSS
+# 2. Live Animated Cyber Gradient & Element Styling
 # ==========================================
 st.markdown("""
     <style>
-    /* Dark Sci-Fi Background */
+    @keyframes liveGradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Full Application Live Animated Gradient Background */
     .stApp {
-        background: radial-gradient(circle at center, #010409 0%, #000000 100%);
+        background: linear-gradient(135deg, #010c1a, #00223b, #007a87, #00334d) !important;
+        background-size: 300% 300% !important;
+        animation: liveGradientShift 15s ease infinite !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Streamlit Containers & Main Area Transparency */
+    [data-testid="stMain"], [data-testid="stChatMessageContainer"] {
+        background: transparent !important;
+    }
+
+    /* Top Header / Navigation Bar Styling */
+    [data-testid="stHeader"] {
+        background: rgba(1, 12, 26, 0.75) !important;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    /* Sidebar Background Integration */
+    [data-testid="stSidebar"] {
+        background: rgba(1, 12, 26, 0.90) !important;
+        border-right: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    /* Chat Input / Text Box Styling */
+    [data-testid="stChatInput"] {
+        background: rgba(1, 12, 26, 0.85) !important;
+        border: 1px solid rgba(0, 240, 255, 0.5) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+    }
+
+    [data-testid="stChatInput"] textarea {
+        color: #00F0FF !important;
+    }
+
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: rgba(0, 240, 255, 0.5) !important;
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -125,7 +168,7 @@ st.markdown("""
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(1, 4, 9, 0.8) !important;
+        background: rgba(1, 12, 26, 0.85) !important;
         border: 1px solid rgba(0, 240, 255, 0.4) !important;
         border-radius: 12px !important;
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
@@ -198,9 +241,7 @@ with st.sidebar:
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
-        # Check if user clicked the edit pencil for this session
         if st.session_state.editing_session == s_name:
-            # Inline rename interface
             new_name_input = st.text_input(
                 "Rename Chat:",
                 value=s_name,
@@ -212,7 +253,6 @@ with st.sidebar:
                 if st.button("✅", key=f"save_{s_name}", help="Save Name"):
                     trimmed_name = new_name_input.strip()
                     if trimmed_name and trimmed_name != s_name:
-                        # Re-key session dictionary to save under new title
                         st.session_state.sessions[trimmed_name] = st.session_state.sessions.pop(s_name)
                         if st.session_state.current_session == s_name:
                             st.session_state.current_session = trimmed_name
@@ -223,7 +263,6 @@ with st.sidebar:
                     st.session_state.editing_session = None
                     st.rerun()
         else:
-            # Standard Session Row with Select, Pencil Rename, and Delete Buttons
             col_select, col_edit, col_del = st.columns([3, 1, 1])
             with col_select:
                 if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
@@ -299,7 +338,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-precision visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -307,7 +346,9 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
-                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
+                rand_seed = random.randint(1000, 999999)
+                encoded_prompt = urllib.parse.quote(clean_query)
+                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&seed={rand_seed}&model=turbo&nologo=true&enhance=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
                 st.session_state.sessions[st.session_state.current_session].append({
@@ -357,6 +398,7 @@ if prompt:
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
+                                max_tokens=4096,  # <-- Capped token limit to prevent credit exhaustion errors
                                 stream=True,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
