@@ -296,7 +296,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-definition visual assets..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-precision visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -304,10 +304,11 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
-                rand_seed = random.randint(1, 100000)
                 
-                # High-fidelity image URL generation using Pollinations Flux engine
-                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1280&height=720&model=flux&seed={rand_seed}&nologo=true"
+                # Upgraded image generation route with high-fidelity Turbo model parameters
+                rand_seed = random.randint(1000, 999999)
+                encoded_prompt = urllib.parse.quote(clean_query)
+                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&seed={rand_seed}&model=turbo&nologo=true&enhance=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
                 st.session_state.sessions[st.session_state.current_session].append({
