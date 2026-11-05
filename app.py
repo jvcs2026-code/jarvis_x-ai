@@ -31,15 +31,21 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Full-Window Navy-to-Teal Gradient Styling
+# 2. Live Animated Cyber Gradient & Element Styling
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application & Main Area Gradient Background */
+    @keyframes liveGradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Full Application Live Animated Gradient Background */
     .stApp {
-        background: linear-gradient(135deg, #010c1a 0%, #00223b 50%, #007a87 100%) !important;
-        background-size: cover !important;
-        background-attachment: fixed !important;
+        background: linear-gradient(135deg, #010c1a, #00223b, #007a87, #00334d) !important;
+        background-size: 300% 300% !important;
+        animation: liveGradientShift 15s ease infinite !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
@@ -51,13 +57,13 @@ st.markdown("""
 
     /* Top Header / Navigation Bar Styling */
     [data-testid="stHeader"] {
-        background: linear-gradient(90deg, rgba(1, 12, 26, 0.85) 0%, rgba(0, 34, 59, 0.85) 100%) !important;
+        background: rgba(1, 12, 26, 0.75) !important;
         border-bottom: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
-        background: rgba(1, 12, 26, 0.92) !important;
+        background: rgba(1, 12, 26, 0.90) !important;
         border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
 
