@@ -5,6 +5,7 @@ import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image
+import random
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -295,7 +296,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets with DALL-E 3..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-definition visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -303,32 +304,18 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
+                rand_seed = random.randint(1, 100000)
                 
-                try:
-                    client = OpenAI(
-                        base_url="https://openrouter.ai/api/v1",
-                        api_key=api_key,
-                    )
-                    
-                    # Corrected quality parameter to 'auto' for OpenRouter/DALL-E 3
-                    response = client.images.generate(
-                        model="openai/dall-e-3",
-                        prompt=clean_query,
-                        size="1024x1024",
-                        quality="auto",
-                        n=1
-                    )
-                    image_url = response.data[0].url
-                    
-                    st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                    st.session_state.sessions[st.session_state.current_session].append({
-                        "role": "assistant", 
-                        "content": image_url, 
-                        "type": "image", 
-                        "caption": f"Generated for Boss: {prompt}"
-                    })
-                except Exception as img_err:
-                    st.error(f"Image Generation Error: {img_err}")
+                # High-fidelity image URL generation using Pollinations Flux engine
+                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1280&height=720&model=flux&seed={rand_seed}&nologo=true"
+                
+                st.image(image_url, caption=f"Generated for Boss: {prompt}")
+                st.session_state.sessions[st.session_state.current_session].append({
+                    "role": "assistant", 
+                    "content": image_url, 
+                    "type": "image", 
+                    "caption": f"Generated for Boss: {prompt}"
+                })
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
                 try:
