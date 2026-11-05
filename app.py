@@ -31,7 +31,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Full-Window Cyber Gradient Styling & HUD CSS
+# 2. Full-Window Cyber Gradient & Element Styling (Top Bar, Chat Box, App)
 # ==========================================
 st.markdown("""
     <style>
@@ -44,15 +44,37 @@ st.markdown("""
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
-    /* Ensure Streamlit containers take on the transparent/dark glassmorphic HUD style */
+    /* Streamlit Containers & Main Area Transparency */
     [data-testid="stMain"], [data-testid="stChatMessageContainer"] {
         background: transparent !important;
+    }
+
+    /* Top Header / Navigation Bar Styling */
+    [data-testid="stHeader"] {
+        background: linear-gradient(90deg, rgba(1, 12, 26, 0.85) 0%, rgba(0, 34, 59, 0.85) 100%) !important;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
         background: rgba(1, 12, 26, 0.92) !important;
         border-right: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    /* Chat Input / Text Box Styling */
+    [data-testid="stChatInput"] {
+        background: rgba(1, 12, 26, 0.85) !important;
+        border: 1px solid rgba(0, 240, 255, 0.5) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+    }
+
+    [data-testid="stChatInput"] textarea {
+        color: #00F0FF !important;
+    }
+
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: rgba(0, 240, 255, 0.5) !important;
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
