@@ -171,7 +171,9 @@ if "sessions" not in st.session_state:
 if "current_session" not in st.session_state:
     st.session_state.current_session = "New Chat"
 
-# Updated with latest high-performance models and OpenRouter nitro routing suffix for max speed
+if "editing_session" not in st.session_state:
+    st.session_state.editing_session = None
+
 MODEL_OPTIONS = {
     "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
     "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
@@ -188,6 +190,7 @@ with st.sidebar:
         new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
         st.session_state.sessions[new_title] = []
         st.session_state.current_session = new_title
+        st.session_state.editing_session = None
         st.rerun()
 
     st.divider()
@@ -195,20 +198,50 @@ with st.sidebar:
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
-        col_select, col_del = st.columns([4, 1])
-        with col_select:
-            if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
-                st.session_state.current_session = s_name
-                st.rerun()
-        with col_del:
-            if len(st.session_state.sessions) > 1:
-                if st.button("🗑️", key=f"del_{s_name}", help=f"Delete {s_name}"):
-                    del st.session_state.sessions[s_name]
-                    if st.session_state.current_session == s_name:
-                        st.session_state.current_session = list(st.session_state.sessions.keys())[-1]
+        # Check if user clicked the edit pencil for this session
+        if st.session_state.editing_session == s_name:
+            # Inline rename interface
+            new_name_input = st.text_input(
+                "Rename Chat:",
+                value=s_name,
+                key=f"input_edit_{s_name}",
+                label_visibility="collapsed"
+            )
+            col_save, col_cancel = st.columns([1, 1])
+            with col_save:
+                if st.button("✅", key=f"save_{s_name}", help="Save Name"):
+                    trimmed_name = new_name_input.strip()
+                    if trimmed_name and trimmed_name != s_name:
+                        # Re-key session dictionary to save under new title
+                        st.session_state.sessions[trimmed_name] = st.session_state.sessions.pop(s_name)
+                        if st.session_state.current_session == s_name:
+                            st.session_state.current_session = trimmed_name
+                    st.session_state.editing_session = None
                     st.rerun()
-            else:
-                st.button("🔒", disabled=True, key=f"lock_{s_name}", help="Cannot delete last session")
+            with col_cancel:
+                if st.button("❌", key=f"cancel_{s_name}", help="Cancel Edit"):
+                    st.session_state.editing_session = None
+                    st.rerun()
+        else:
+            # Standard Session Row with Select, Pencil Rename, and Delete Buttons
+            col_select, col_edit, col_del = st.columns([3, 1, 1])
+            with col_select:
+                if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
+                    st.session_state.current_session = s_name
+                    st.rerun()
+            with col_edit:
+                if st.button("✏️", key=f"edit_{s_name}", help=f"Rename {s_name}"):
+                    st.session_state.editing_session = s_name
+                    st.rerun()
+            with col_del:
+                if len(st.session_state.sessions) > 1:
+                    if st.button("🗑️", key=f"del_{s_name}", help=f"Delete {s_name}"):
+                        del st.session_state.sessions[s_name]
+                        if st.session_state.current_session == s_name:
+                            st.session_state.current_session = list(st.session_state.sessions.keys())[-1]
+                        st.rerun()
+                else:
+                    st.button("🔒", disabled=True, key=f"lock_{s_name}", help="Cannot delete last session")
 
     st.divider()
     st.markdown("⚙️ **System Settings**")
@@ -216,7 +249,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Active Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=2  # Default to Gemini 3.8 Flash for instant speed
+        index=2
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -226,6 +259,7 @@ with st.sidebar:
     if st.button("🗑️ Purge All Logs", use_container_width=True):
         st.session_state.sessions = {"New Chat": []}
         st.session_state.current_session = "New Chat"
+        st.session_state.editing_session = None
         st.rerun()
 
 if st.session_state.current_session not in st.session_state.sessions:
@@ -290,7 +324,6 @@ if prompt:
                         api_key=api_key,
                     )
 
-                    # Enhanced System Instructions establishing expert programming capability across all languages
                     system_instruction = {
                         "role": "system",
                         "content": (
@@ -321,7 +354,6 @@ if prompt:
 
                     for model_to_try in fallback_sequence:
                         try:
-                            # Enable streaming for instant token-by-token rendering speed
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
@@ -332,7 +364,6 @@ if prompt:
                                 }
                             )
                             
-                            # Stream tokens into UI placeholder
                             response_placeholder = st.empty()
                             full_streamed_content = ""
                             for chunk in response:
