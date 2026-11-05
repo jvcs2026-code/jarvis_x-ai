@@ -31,16 +31,16 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Full-Window Cyber Gradient & Element Styling (Top Bar, Chat Box, App)
+# 2. Full-Window Sunset Gradient & Element Styling
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application & Main Area Gradient Background */
+    /* Full Application & Main Area Sunset Gradient Background */
     .stApp {
-        background: linear-gradient(135deg, #010c1a 0%, #00223b 50%, #007a87 100%) !important;
+        background: linear-gradient(135deg, #7c4d8c 0%, #f48fb1 35%, #ffb74d 70%, #7986cb 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
-        color: #00F0FF;
+        color: #FFFFFF;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -51,30 +51,30 @@ st.markdown("""
 
     /* Top Header / Navigation Bar Styling */
     [data-testid="stHeader"] {
-        background: linear-gradient(90deg, rgba(1, 12, 26, 0.85) 0%, rgba(0, 34, 59, 0.85) 100%) !important;
-        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        background: linear-gradient(90deg, rgba(124, 77, 140, 0.85) 0%, rgba(121, 134, 203, 0.85) 100%) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
-        background: rgba(1, 12, 26, 0.92) !important;
-        border-right: 1px solid rgba(0, 240, 255, 0.2);
+        background: rgba(60, 35, 75, 0.92) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     /* Chat Input / Text Box Styling */
     [data-testid="stChatInput"] {
-        background: rgba(1, 12, 26, 0.85) !important;
-        border: 1px solid rgba(0, 240, 255, 0.5) !important;
+        background: rgba(60, 35, 75, 0.85) !important;
+        border: 1px solid rgba(255, 183, 77, 0.6) !important;
         border-radius: 14px !important;
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+        box-shadow: 0 0 20px rgba(244, 143, 177, 0.3) !important;
     }
 
     [data-testid="stChatInput"] textarea {
-        color: #00F0FF !important;
+        color: #FFFFFF !important;
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
-        color: rgba(0, 240, 255, 0.5) !important;
+        color: rgba(255, 255, 255, 0.6) !important;
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -101,9 +101,9 @@ st.markdown("""
         width: 130px;
         height: 130px;
         border-radius: 50%;
-        border: 2px dashed rgba(0, 240, 255, 0.7);
+        border: 2px dashed rgba(255, 183, 77, 0.8);
         animation: rotateDashedRing 10s linear infinite;
-        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        box-shadow: 0 0 12px rgba(255, 183, 77, 0.5);
     }
 
     .friday-core {
@@ -111,9 +111,9 @@ st.markdown("""
         width: 85px;
         height: 85px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(1, 4, 9, 0.95) 80%);
-        border: 2px solid #00F0FF;
-        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
+        background: radial-gradient(circle, rgba(255, 183, 77, 0.4) 0%, rgba(60, 35, 75, 0.95) 80%);
+        border: 2px solid #ffb74d;
+        box-shadow: 0 0 30px #ffb74d, inset 0 0 15px #f48fb1;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -123,8 +123,8 @@ st.markdown("""
     .friday-symbol {
         font-size: 2.5rem;
         font-weight: 900;
-        color: #00F0FF;
-        text-shadow: 0 0 20px #00F0FF;
+        color: #ffb74d;
+        text-shadow: 0 0 20px #ffb74d;
         font-family: 'Courier New', monospace;
     }
 
@@ -134,47 +134,48 @@ st.markdown("""
     }
 
     @keyframes pulseFRIDAY {
-        0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
-        100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
+        0% { box-shadow: 0 0 20px #ffb74d, inset 0 0 15px #f48fb1; }
+        50% { box-shadow: 0 0 40px #f48fb1, inset 0 0 25px #ffb74d; }
+        100% { box-shadow: 0 0 20px #ffb74d, inset 0 0 15px #f48fb1; }
     }
 
     .hud-title {
-        color: #00F0FF;
+        color: #ffb74d;
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 20px rgba(0, 240, 255, 1);
+        text-shadow: 0 0 20px rgba(255, 183, 77, 0.9);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
     .hud-status {
-        color: #10B981;
+        color: #81c784;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+        text-shadow: 0 0 10px rgba(129, 199, 132, 0.8);
         text-align: center;
         margin-bottom: 20px;
     }
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(1, 12, 26, 0.85) !important;
-        border: 1px solid rgba(0, 240, 255, 0.4) !important;
+        background: rgba(60, 35, 75, 0.85) !important;
+        border: 1px solid rgba(255, 183, 77, 0.4) !important;
         border-radius: 12px !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+        box-shadow: 0 0 15px rgba(244, 143, 177, 0.2) !important;
         margin-bottom: 12px !important;
+        color: #FFFFFF !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
-        border-left: 4px solid #00F0FF !important;
+        border-left: 4px solid #f48fb1 !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #10B981 !important;
+        border-left: 4px solid #ffb74d !important;
     }
     </style>
 """, unsafe_allow_html=True)
