@@ -369,11 +369,10 @@ if prompt:
                         "role": "system",
                         "content": (
                             "You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
-                            "You are a world-class expert programmer proficient in ALL programming languages, frameworks, "
-                            "algorithms, embedded systems (Arduino, C++), web development (HTML, CSS, JS, React, Streamlit), "
-                            "databases (MySQL, PostgreSQL), and game engines (Unreal Engine). "
-                            "When writing code, provide clean, bug-free, production-ready code blocks with detailed comments "
-                            "and clear explanations. Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
+                            "You are a brilliant tactical advisor and engineer. "
+                            "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
+                            "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
+                            "Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
                         )
                     }
                     
@@ -398,7 +397,7 @@ if prompt:
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
-                                max_tokens=4096,  # <-- Capped token limit to prevent credit exhaustion errors
+                                max_tokens=4096,
                                 stream=True,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
@@ -424,7 +423,7 @@ if prompt:
 
                     if reply:
                         if enable_voice:
-                            speech_text = "Here is the code solution, Boss." if "```" in reply else reply
+                            speech_text = "Here is the solution, Boss." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
                                 <script>
