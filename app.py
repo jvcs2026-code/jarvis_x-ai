@@ -198,9 +198,7 @@ with st.sidebar:
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
-        # Check if user clicked the edit pencil for this session
         if st.session_state.editing_session == s_name:
-            # Inline rename interface
             new_name_input = st.text_input(
                 "Rename Chat:",
                 value=s_name,
@@ -212,7 +210,6 @@ with st.sidebar:
                 if st.button("✅", key=f"save_{s_name}", help="Save Name"):
                     trimmed_name = new_name_input.strip()
                     if trimmed_name and trimmed_name != s_name:
-                        # Re-key session dictionary to save under new title
                         st.session_state.sessions[trimmed_name] = st.session_state.sessions.pop(s_name)
                         if st.session_state.current_session == s_name:
                             st.session_state.current_session = trimmed_name
@@ -223,7 +220,6 @@ with st.sidebar:
                     st.session_state.editing_session = None
                     st.rerun()
         else:
-            # Standard Session Row with Select, Pencil Rename, and Delete Buttons
             col_select, col_edit, col_del = st.columns([3, 1, 1])
             with col_select:
                 if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
@@ -299,7 +295,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets with DALL-E 3..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -307,15 +303,32 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
-                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
                 
-                st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                st.session_state.sessions[st.session_state.current_session].append({
-                    "role": "assistant", 
-                    "content": image_url, 
-                    "type": "image", 
-                    "caption": f"Generated for Boss: {prompt}"
-                })
+                try:
+                    client = OpenAI(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=api_key,
+                    )
+                    
+                    # Corrected quality parameter to 'auto' for OpenRouter/DALL-E 3
+                    response = client.images.generate(
+                        model="openai/dall-e-3",
+                        prompt=clean_query,
+                        size="1024x1024",
+                        quality="auto",
+                        n=1
+                    )
+                    image_url = response.data[0].url
+                    
+                    st.image(image_url, caption=f"Generated for Boss: {prompt}")
+                    st.session_state.sessions[st.session_state.current_session].append({
+                        "role": "assistant", 
+                        "content": image_url, 
+                        "type": "image", 
+                        "caption": f"Generated for Boss: {prompt}"
+                    })
+                except Exception as img_err:
+                    st.error(f"Image Generation Error: {img_err}")
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
                 try:
