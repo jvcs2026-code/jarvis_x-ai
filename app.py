@@ -31,17 +31,28 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Custom Cyber Gradient Background & HUD CSS
+# 2. Full-Window Cyber Gradient Styling & HUD CSS
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Screen Custom Cyber Gradient Background */
+    /* Full Application & Main Area Gradient Background */
     .stApp {
-        background: linear-gradient(135deg, #010c1a 0%, #00223b 50%, #007a87 100%);
-        background-size: cover;
-        background-attachment: fixed;
+        background: linear-gradient(135deg, #010c1a 0%, #00223b 50%, #007a87 100%) !important;
+        background-size: cover !important;
+        background-attachment: fixed !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Ensure Streamlit containers take on the transparent/dark glassmorphic HUD style */
+    [data-testid="stMain"], [data-testid="stChatMessageContainer"] {
+        background: transparent !important;
+    }
+
+    /* Sidebar Background Integration */
+    [data-testid="stSidebar"] {
+        background: rgba(1, 12, 26, 0.92) !important;
+        border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -129,7 +140,7 @@ st.markdown("""
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(1, 4, 9, 0.85) !important;
+        background: rgba(1, 12, 26, 0.85) !important;
         border: 1px solid rgba(0, 240, 255, 0.4) !important;
         border-radius: 12px !important;
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
