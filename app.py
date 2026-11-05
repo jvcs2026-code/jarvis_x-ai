@@ -182,6 +182,12 @@ MODEL_OPTIONS = {
     "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
 }
 
+# Cap on reply length. Without this, OpenRouter reserves the model's maximum
+# output (e.g. 131072 tokens) and returns a 402 error if the account balance
+# can't cover that worst case. Raise it for longer answers, but keep it well
+# below what your credits can afford.
+MAX_OUTPUT_TOKENS = 4096
+
 # Sidebar Navigation & Session Management
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
@@ -358,6 +364,7 @@ if prompt:
                                 model=model_to_try,
                                 messages=conversation_history,
                                 stream=True,
+                                max_tokens=MAX_OUTPUT_TOKENS,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
                                     "X-Title": "FRIDAY AI HUD"
@@ -396,7 +403,14 @@ if prompt:
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
                     else:
-                        st.error(f"Gateway Error: {last_error}")
+                        if getattr(last_error, "status_code", None) == 402:
+                            st.error(
+                                "Neural core credits are low. Top up at "
+                                "https://openrouter.ai/settings/credits, or lower "
+                                "MAX_OUTPUT_TOKENS in app.py."
+                            )
+                        else:
+                            st.error(f"Gateway Error: {last_error}")
 
                 except Exception as e:
                     st.error(f"Gateway Error: {e}")
