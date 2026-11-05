@@ -1,11 +1,10 @@
 import os
 from pathlib import Path
-import urllib.parse
 import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image
-import random
+import io
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -161,6 +160,7 @@ st.markdown("""
 # 3. Backend & Multi-Session History Setup
 # ==========================================
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN", "")
 
 if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
@@ -296,7 +296,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-precision visual assets..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-intelligence visual assets via FLUX..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -305,18 +305,28 @@ if prompt:
                 
                 clean_query = img_prompt if img_prompt else prompt
                 
-                # Upgraded image generation route with high-fidelity Turbo model parameters
-                rand_seed = random.randint(1000, 999999)
-                encoded_prompt = urllib.parse.quote(clean_query)
-                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&seed={rand_seed}&model=turbo&nologo=true&enhance=true"
-                
-                st.image(image_url, caption=f"Generated for Boss: {prompt}")
-                st.session_state.sessions[st.session_state.current_session].append({
-                    "role": "assistant", 
-                    "content": image_url, 
-                    "type": "image", 
-                    "caption": f"Generated for Boss: {prompt}"
-                })
+                try:
+                    # Using Hugging Face's free FLUX.1-schnell model API endpoint for professional images
+                    API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+                    headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
+                    
+                    response = requests.post(API_URL, headers=headers, json={"inputs": clean_query}, timeout=60)
+                    
+                    if response.status_code == 200:
+                        image_bytes = response.content
+                        image = Image.open(io.BytesIO(image_bytes))
+                        
+                        st.image(image, caption=f"Generated for Boss: {prompt}")
+                        st.session_state.sessions[st.session_state.current_session].append({
+                            "role": "assistant", 
+                            "content": image, 
+                            "type": "image", 
+                            "caption": f"Generated for Boss: {prompt}"
+                        })
+                    else:
+                        st.error(f"Image Generation Gateway Error ({response.status_code}): {response.text}")
+                except Exception as img_err:
+                    st.error(f"Image Generation Error: {img_err}")
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
                 try:
