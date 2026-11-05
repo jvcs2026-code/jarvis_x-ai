@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
+import urllib.parse
 import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image
-import io
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -160,7 +160,6 @@ st.markdown("""
 # 3. Backend & Multi-Session History Setup
 # ==========================================
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
-hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN", "")
 
 if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
@@ -199,7 +198,9 @@ with st.sidebar:
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
+        # Check if user clicked the edit pencil for this session
         if st.session_state.editing_session == s_name:
+            # Inline rename interface
             new_name_input = st.text_input(
                 "Rename Chat:",
                 value=s_name,
@@ -211,6 +212,7 @@ with st.sidebar:
                 if st.button("✅", key=f"save_{s_name}", help="Save Name"):
                     trimmed_name = new_name_input.strip()
                     if trimmed_name and trimmed_name != s_name:
+                        # Re-key session dictionary to save under new title
                         st.session_state.sessions[trimmed_name] = st.session_state.sessions.pop(s_name)
                         if st.session_state.current_session == s_name:
                             st.session_state.current_session = trimmed_name
@@ -221,6 +223,7 @@ with st.sidebar:
                     st.session_state.editing_session = None
                     st.rerun()
         else:
+            # Standard Session Row with Select, Pencil Rename, and Delete Buttons
             col_select, col_edit, col_del = st.columns([3, 1, 1])
             with col_select:
                 if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
@@ -296,7 +299,7 @@ if prompt:
         is_image_request = any(kw in prompt_lower for kw in image_keywords)
 
         if is_image_request:
-            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-intelligence visual assets via FLUX..."):
+            with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
                     if prompt_lower.startswith(prefix):
@@ -304,29 +307,15 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
+                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
                 
-                try:
-                    # Using Hugging Face's free FLUX.1-schnell model API endpoint for professional images
-                    API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-                    headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
-                    
-                    response = requests.post(API_URL, headers=headers, json={"inputs": clean_query}, timeout=60)
-                    
-                    if response.status_code == 200:
-                        image_bytes = response.content
-                        image = Image.open(io.BytesIO(image_bytes))
-                        
-                        st.image(image, caption=f"Generated for Boss: {prompt}")
-                        st.session_state.sessions[st.session_state.current_session].append({
-                            "role": "assistant", 
-                            "content": image, 
-                            "type": "image", 
-                            "caption": f"Generated for Boss: {prompt}"
-                        })
-                    else:
-                        st.error(f"Image Generation Gateway Error ({response.status_code}): {response.text}")
-                except Exception as img_err:
-                    st.error(f"Image Generation Error: {img_err}")
+                st.image(image_url, caption=f"Generated for Boss: {prompt}")
+                st.session_state.sessions[st.session_state.current_session].append({
+                    "role": "assistant", 
+                    "content": image_url, 
+                    "type": "image", 
+                    "caption": f"Generated for Boss: {prompt}"
+                })
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
                 try:
