@@ -5,6 +5,8 @@ import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image
+import time
+import random
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -198,9 +200,7 @@ with st.sidebar:
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
-        # Check if user clicked the edit pencil for this session
         if st.session_state.editing_session == s_name:
-            # Inline rename interface
             new_name_input = st.text_input(
                 "Rename Chat:",
                 value=s_name,
@@ -212,7 +212,6 @@ with st.sidebar:
                 if st.button("✅", key=f"save_{s_name}", help="Save Name"):
                     trimmed_name = new_name_input.strip()
                     if trimmed_name and trimmed_name != s_name:
-                        # Re-key session dictionary to save under new title
                         st.session_state.sessions[trimmed_name] = st.session_state.sessions.pop(s_name)
                         if st.session_state.current_session == s_name:
                             st.session_state.current_session = trimmed_name
@@ -223,7 +222,6 @@ with st.sidebar:
                     st.session_state.editing_session = None
                     st.rerun()
         else:
-            # Standard Session Row with Select, Pencil Rename, and Delete Buttons
             col_select, col_edit, col_del = st.columns([3, 1, 1])
             with col_select:
                 if st.button(s_name, use_container_width=True, key=f"sel_{s_name}"):
@@ -307,7 +305,9 @@ if prompt:
                         break
                 
                 clean_query = img_prompt if img_prompt else prompt
-                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&nologo=true"
+                # Added dynamic seed parameter to bypass cache/rate-limit blocks
+                rand_seed = random.randint(1, 100000)
+                image_url = f"https://pollinations.ai/p/{urllib.parse.quote(clean_query)}?width=1024&height=1024&model=flux&seed={rand_seed}&nologo=true"
                 
                 st.image(image_url, caption=f"Generated for Boss: {prompt}")
                 st.session_state.sessions[st.session_state.current_session].append({
