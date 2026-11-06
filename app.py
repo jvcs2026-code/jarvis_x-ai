@@ -31,16 +31,14 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Background Image Styling & HUD CSS
+# 2. Pure Gradient Code Background Styling & HUD CSS
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Background Image (bgm.jpg) */
+    /* Full Application Navy-to-Teal Gradient Background Code */
     .stApp {
-        background-image: linear-gradient(rgba(1, 4, 9, 0.65), rgba(1, 4, 9, 0.80)), url("static/bgm.jpg");
+        background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
         background-size: cover !important;
-        background-position: center !important;
-        background-repeat: no-repeat !important;
         background-attachment: fixed !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
@@ -53,19 +51,19 @@ st.markdown("""
 
     /* Top Header / Navigation Bar Styling */
     [data-testid="stHeader"] {
-        background: rgba(1, 12, 26, 0.75) !important;
+        background: rgba(2, 18, 38, 0.75) !important;
         border-bottom: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
-        background: rgba(1, 12, 26, 0.90) !important;
+        background: rgba(2, 18, 38, 0.90) !important;
         border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Chat Input / Text Box Styling */
     [data-testid="stChatInput"] {
-        background: rgba(1, 12, 26, 0.85) !important;
+        background: rgba(2, 18, 38, 0.85) !important;
         border: 1px solid rgba(0, 240, 255, 0.5) !important;
         border-radius: 14px !important;
         box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
@@ -113,7 +111,7 @@ st.markdown("""
         width: 85px;
         height: 85px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(1, 4, 9, 0.95) 80%);
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(2, 18, 38, 0.95) 80%);
         border: 2px solid #00F0FF;
         box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
         display: flex;
@@ -164,7 +162,7 @@ st.markdown("""
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(1, 12, 26, 0.85) !important;
+        background: rgba(2, 18, 38, 0.85) !important;
         border: 1px solid rgba(0, 240, 255, 0.4) !important;
         border-radius: 12px !important;
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
