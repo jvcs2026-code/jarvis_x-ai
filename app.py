@@ -31,21 +31,17 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Live Animated Cyber Gradient & Element Styling
+# 2. Background Image Styling & HUD CSS
 # ==========================================
 st.markdown("""
     <style>
-    @keyframes liveGradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    /* Full Application Live Animated Gradient Background */
+    /* Full Application Background Image (bg.jpg) */
     .stApp {
-        background: linear-gradient(135deg, #010c1a, #00223b, #007a87, #00334d) !important;
-        background-size: 300% 300% !important;
-        animation: liveGradientShift 15s ease infinite !important;
+        background-image: linear-gradient(rgba(1, 4, 9, 0.75), rgba(1, 4, 9, 0.85)), url("app/static/bg.jpg");
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
