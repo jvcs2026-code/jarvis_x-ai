@@ -31,16 +31,16 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Pure Gradient Code Background Styling & HUD CSS
+# 2. Iron Man Theme Styling (Red, Black, & Gold)
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Navy-to-Teal Gradient Background Code */
+    /* Full Application Iron Man Gradient Background Code (Black, Crimson Red, and Gold) */
     .stApp {
-        background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
+        background: linear-gradient(135deg, #0d090a 0%, #2b0c10 40%, #781c1c 75%, #d4af37 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
-        color: #00F0FF;
+        color: #FFD700;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -51,30 +51,30 @@ st.markdown("""
 
     /* Top Header / Navigation Bar Styling */
     [data-testid="stHeader"] {
-        background: rgba(2, 18, 38, 0.75) !important;
-        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        background: rgba(13, 9, 10, 0.85) !important;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
-        background: rgba(2, 18, 38, 0.90) !important;
-        border-right: 1px solid rgba(0, 240, 255, 0.2);
+        background: rgba(13, 9, 10, 0.92) !important;
+        border-right: 1px solid rgba(212, 175, 55, 0.3);
     }
 
     /* Chat Input / Text Box Styling */
     [data-testid="stChatInput"] {
-        background: rgba(2, 18, 38, 0.85) !important;
-        border: 1px solid rgba(0, 240, 255, 0.5) !important;
+        background: rgba(13, 9, 10, 0.85) !important;
+        border: 1px solid rgba(212, 175, 55, 0.6) !important;
         border-radius: 14px !important;
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.25) !important;
     }
 
     [data-testid="stChatInput"] textarea {
-        color: #00F0FF !important;
+        color: #FFD700 !important;
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
-        color: rgba(0, 240, 255, 0.5) !important;
+        color: rgba(255, 215, 0, 0.5) !important;
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -101,9 +101,9 @@ st.markdown("""
         width: 130px;
         height: 130px;
         border-radius: 50%;
-        border: 2px dashed rgba(0, 240, 255, 0.7);
+        border: 2px dashed rgba(212, 175, 55, 0.8);
         animation: rotateDashedRing 10s linear infinite;
-        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
     }
 
     .friday-core {
@@ -111,9 +111,9 @@ st.markdown("""
         width: 85px;
         height: 85px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(2, 18, 38, 0.95) 80%);
-        border: 2px solid #00F0FF;
-        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, rgba(43, 12, 16, 0.95) 80%);
+        border: 2px solid #FFD700;
+        box-shadow: 0 0 30px #FF4500, inset 0 0 15px #FFD700;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -123,8 +123,8 @@ st.markdown("""
     .friday-symbol {
         font-size: 2.5rem;
         font-weight: 900;
-        color: #00F0FF;
-        text-shadow: 0 0 20px #00F0FF;
+        color: #FFD700;
+        text-shadow: 0 0 20px #FF4500;
         font-family: 'Courier New', monospace;
     }
 
@@ -134,47 +134,48 @@ st.markdown("""
     }
 
     @keyframes pulseFRIDAY {
-        0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
-        100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
+        0% { box-shadow: 0 0 20px #FF4500, inset 0 0 15px #FFD700; }
+        50% { box-shadow: 0 0 50px #FFD700, inset 0 0 25px #FF4500; }
+        100% { box-shadow: 0 0 20px #FF4500, inset 0 0 15px #FFD700; }
     }
 
     .hud-title {
-        color: #00F0FF;
+        color: #FFD700;
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 20px rgba(0, 240, 255, 1);
+        text-shadow: 0 0 20px rgba(255, 69, 0, 0.9);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
     .hud-status {
-        color: #10B981;
+        color: #00FF66;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+        text-shadow: 0 0 10px rgba(0, 255, 102, 0.8);
         text-align: center;
         margin-bottom: 20px;
     }
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(2, 18, 38, 0.85) !important;
-        border: 1px solid rgba(0, 240, 255, 0.4) !important;
+        background: rgba(13, 9, 10, 0.88) !important;
+        border: 1px solid rgba(212, 175, 55, 0.4) !important;
         border-radius: 12px !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+        box-shadow: 0 0 15px rgba(255, 69, 0, 0.15) !important;
         margin-bottom: 12px !important;
+        color: #FFD700 !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
-        border-left: 4px solid #00F0FF !important;
+        border-left: 4px solid #FFD700 !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #10B981 !important;
+        border-left: 4px solid #FF2400 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -189,7 +190,7 @@ st.markdown("""
             </div>
         </div>
         <div class="hud-title">F.R.I.D.A.Y.</div>
-        <div class="hud-status">● MASTER PROGRAMMING & NEURAL CORE ACTIVE</div>
+        <div class="hud-status">● MARK L5 ARMOR SUITE ONLINE</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -352,86 +353,4 @@ if prompt:
                     "caption": f"Generated for Boss: {prompt}"
                 })
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
-                try:
-                    client = OpenAI(
-                        base_url="https://openrouter.ai/api/v1",
-                        api_key=api_key,
-                    )
-
-                    system_instruction = {
-                        "role": "system",
-                        "content": (
-                            "You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
-                            "You are a brilliant tactical advisor and engineer. "
-                            "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
-                            "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
-                            "Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
-                        )
-                    }
-                    
-                    filtered_history = [
-                        {"role": m["role"], "content": m["content"]} 
-                        for m in st.session_state.sessions[st.session_state.current_session] 
-                        if m.get("type") != "image"
-                    ]
-                    
-                    conversation_history = [system_instruction] + filtered_history
-
-                    fallback_sequence = [
-                        selected_model_id, 
-                        "google/gemini-3.8-flash:nitro", 
-                        "deepseek/deepseek-v4.1-flash:nitro"
-                    ]
-                    reply = None
-                    last_error = None
-
-                    for model_to_try in fallback_sequence:
-                        try:
-                            response = client.chat.completions.create(
-                                model=model_to_try,
-                                messages=conversation_history,
-                                max_tokens=4096,
-                                stream=True,
-                                extra_headers={
-                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                    "X-Title": "FRIDAY AI HUD"
-                                }
-                            )
-                            
-                            response_placeholder = st.empty()
-                            full_streamed_content = ""
-                            for chunk in response:
-                                delta = chunk.choices[0].delta.content
-                                if delta:
-                                    full_streamed_content += delta
-                                    response_placeholder.markdown(full_streamed_content + "▌")
-                            
-                            reply = full_streamed_content
-                            response_placeholder.markdown(reply)
-                            if reply:
-                                break
-                        except Exception as model_err:
-                            last_error = model_err
-                            continue
-
-                    if reply:
-                        if enable_voice:
-                            speech_text = "Here is the solution, Boss." if "```" in reply else reply
-                            clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
-                            st.markdown(f"""
-                                <script>
-                                    window.speechSynthesis.cancel();
-                                    const utterance = new SpeechSynthesisUtterance("{clean_speech}");
-                                    utterance.rate = 1.0;
-                                    utterance.pitch = 1.0;
-                                    window.speechSynthesis.speak(utterance);
-                                </script>
-                            """, unsafe_allow_html=True)
-
-                        st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
-                    else:
-                        st.error(f"Gateway Error: {last_error}")
-
-                except Exception as e:
-                    st.error(f"Gateway Error: {e}")
+            with st.spinner(f"
