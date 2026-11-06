@@ -35,9 +35,9 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Background Image (bg.jpg) */
+    /* Full Application Background Image (bgm.jpg) */
     .stApp {
-        background-image: linear-gradient(rgba(1, 4, 9, 0.65), rgba(1, 4, 9, 0.80)), url("static/bg.jpg");
+        background-image: linear-gradient(rgba(1, 4, 9, 0.65), rgba(1, 4, 9, 0.80)), url("static/bgm.jpg");
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
