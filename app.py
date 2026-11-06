@@ -37,7 +37,7 @@ st.markdown("""
     <style>
     /* Full Application Background Image (bg.jpg) */
     .stApp {
-        background-image: linear-gradient(rgba(1, 4, 9, 0.75), rgba(1, 4, 9, 0.85)), url("app/static/bg.jpg");
+        background-image: linear-gradient(rgba(1, 4, 9, 0.75), rgba(1, 4, 9, 0.85)), url("static/bg.jpg");
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
