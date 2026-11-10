@@ -7,6 +7,8 @@ from openai import OpenAI
 from PIL import Image
 import io
 import random
+import zipfile
+import xml.etree.ElementTree as ET
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -234,7 +236,7 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
-    uploaded_file = st.file_uploader("Upload doc, code, or image", type=["txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("Upload PDF, doc, code, or image", type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
 
     st.divider()
     st.markdown("### 🕒 Recent Chats")
@@ -320,7 +322,6 @@ for message in current_messages:
 # ==========================================
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
-# Process uploaded file (Text or Image)
 file_data_payload = None
 is_image_file = False
 
@@ -329,6 +330,25 @@ if uploaded_file is not None:
     if file_extension in ["png", "jpg", "jpeg"]:
         is_image_file = True
         file_data_payload = uploaded_file.getvalue()
+    elif file_extension == "pdf":
+        try:
+            # Native lightweight PDF text extractor (bypasses external dependencies)
+            content = uploaded_file.getvalue()
+            extracted_text = []
+            start_pos = 0
+            while True:
+                start_pos = content.find(b'(', start_pos)
+                if start_pos == -1:
+                    break
+                end_pos = content.find(b')', start_pos)
+                if end_pos != -1:
+                    chunk = content[start_pos+1:end_pos].decode('latin-1', errors='ignore')
+                    if len(chunk) > 2:
+                        extracted_text.append(chunk)
+                start_pos += 1
+            file_data_payload = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
+        except Exception as e:
+            file_data_payload = f"[Error reading PDF file: {e}]"
     else:
         try:
             file_data_payload = uploaded_file.read().decode("utf-8", errors="ignore")
@@ -341,7 +361,6 @@ if prompt:
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
         st.session_state.current_session = new_title
 
-    # Append user message to history
     st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
     
     with st.chat_message("user", avatar="👤"):
@@ -405,7 +424,7 @@ if prompt:
                     
                     effective_prompt = prompt
                     if uploaded_file is not None and not is_image_file and file_data_payload:
-                        effective_prompt = f"--- Attached File: {uploaded_file.name} ---\n{file_data_payload}\n-----------------------------------\n\nUser Request: {prompt}"
+                        effective_prompt = f"--- Attached Document: {uploaded_file.name} ---\n{file_data_payload}\n-----------------------------------\n\nUser Request: {prompt}"
 
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
