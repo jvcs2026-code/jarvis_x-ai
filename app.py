@@ -213,6 +213,9 @@ if "current_session" not in st.session_state:
 if "editing_session" not in st.session_state:
     st.session_state.editing_session = None
 
+if "chat_input_text" not in st.session_state:
+    st.session_state.chat_input_text = ""
+
 MODEL_OPTIONS = {
     "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
     "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
@@ -230,11 +233,22 @@ with st.sidebar:
         st.session_state.sessions[new_title] = []
         st.session_state.current_session = new_title
         st.session_state.editing_session = None
+        st.session_state.chat_input_text = ""
         st.rerun()
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
     uploaded_file = st.file_uploader("Upload document/code for analysis", type=["txt", "py", "csv", "json", "md", "log"])
+
+    # When a file is uploaded, automatically load its content into the text box buffer
+    if uploaded_file is not None:
+        try:
+            file_bytes = uploaded_file.read()
+            file_content = file_bytes.decode("utf-8", errors="ignore")
+            # Populate text input buffer with file wrapper structure
+            st.session_state.chat_input_text = f"Analyze this uploaded file ({uploaded_file.name}):\n\n{file_content}"
+        except Exception as e:
+            st.session_state.chat_input_text = f"[Error reading file: {e}]"
 
     st.divider()
     st.markdown("### 🕒 Recent Chats")
@@ -299,6 +313,7 @@ with st.sidebar:
         st.session_state.sessions = {"New Chat": []}
         st.session_state.current_session = "New Chat"
         st.session_state.editing_session = None
+        st.session_state.chat_input_text = ""
         st.rerun()
 
 if st.session_state.current_session not in st.session_state.sessions:
@@ -318,16 +333,24 @@ for message in current_messages:
 # ==========================================
 # 4. User Interaction & Expert Coding Core
 # ==========================================
-prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
+def handle_chat_input():
+    st.session_state.chat_input_text = st.session_state.user_chat_box
 
-# If a file is uploaded, extract its text content
-file_content_string = ""
-if uploaded_file is not None:
-    try:
-        file_bytes = uploaded_file.read()
-        file_content_string = file_bytes.decode("utf-8", errors="ignore")
-    except Exception as e:
-        file_content_string = f"[Error reading file: {e}]"
+st.text_input(
+    "Message F.R.I.D.A.Y.",
+    value=st.session_state.chat_input_text,
+    key="user_chat_box",
+    placeholder=f"Ask F.R.I.D.A.Y. or upload a file ({st.session_state.current_session})...",
+    on_change=handle_chat_input,
+    label_visibility="collapsed"
+)
+
+# Trigger button to submit what's in the text box
+col_sub1, col_sub2 = st.columns([6, 1])
+with col_sub2:
+    submit_btn = st.button("⚡ Send", use_container_width=True)
+
+prompt = st.session_state.chat_input_text if submit_btn and st.session_state.chat_input_text else None
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
@@ -335,17 +358,13 @@ if prompt:
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
         st.session_state.current_session = new_title
 
-    # Combine user prompt with file contents if a file is active in the sidebar
-    effective_prompt = prompt
-    if uploaded_file is not None and file_content_string:
-        effective_prompt = f"--- Attached File: {uploaded_file.name} ---\n{file_content_string}\n-----------------------------------\n\nUser Request: {prompt}"
-
     st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
-        if uploaded_file is not None:
-            st.caption(f"📁 Attached file included in analysis: `{uploaded_file.name}`")
+
+    # Clear input buffer after sending
+    st.session_state.chat_input_text = ""
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
@@ -374,7 +393,7 @@ if prompt:
                     "caption": f"Generated for Sir: {prompt}"
                 })
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is analyzing data & querying {selected_model_label}..."):
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is analyzing file & querying {selected_model_label}..."):
                 try:
                     client = OpenAI(
                         base_url="https://openrouter.ai/api/v1",
@@ -392,15 +411,13 @@ if prompt:
                         )
                     }
                     
-                    # Construct conversation history, injecting the effective prompt (with file text) for the latest turn
-                    history_messages = []
-                    for m in st.session_state.sessions[st.session_state.current_session][:-1]:
-                        if m.get("type") != "image":
-                            history_messages.append({"role": m["role"], "content": m["content"]})
+                    filtered_history = [
+                        {"role": m["role"], "content": m["content"]} 
+                        for m in st.session_state.sessions[st.session_state.current_session] 
+                        if m.get("type") != "image"
+                    ]
                     
-                    history_messages.append({"role": "user", "content": effective_prompt})
-                    
-                    conversation_history = [system_instruction] + history_messages
+                    conversation_history = [system_instruction] + filtered_history
 
                     fallback_sequence = [
                         selected_model_id, 
