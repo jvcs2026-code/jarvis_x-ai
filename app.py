@@ -234,7 +234,7 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
-    uploaded_file = st.file_uploader("Upload document/code for analysis", type=["txt", "py", "csv", "json", "md", "log"])
+    uploaded_file = st.file_uploader("Upload doc, code, or image", type=["txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
 
     st.divider()
     st.markdown("### 🕒 Recent Chats")
@@ -310,7 +310,7 @@ current_messages = st.session_state.sessions[st.session_state.current_session]
 for message in current_messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
-        if message.get("type") == "image":
+        if message.get("type") == "image_display":
             st.image(message["content"], caption=message.get("caption", ""))
         else:
             st.markdown(message["content"])
@@ -320,14 +320,20 @@ for message in current_messages:
 # ==========================================
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
-# If a file is uploaded, extract its text content
-file_content_string = ""
+# Process uploaded file (Text or Image)
+file_data_payload = None
+is_image_file = False
+
 if uploaded_file is not None:
-    try:
-        file_bytes = uploaded_file.read()
-        file_content_string = file_bytes.decode("utf-8", errors="ignore")
-    except Exception as e:
-        file_content_string = f"[Error reading file: {e}]"
+    file_extension = uploaded_file.name.split(".")[-1].lower()
+    if file_extension in ["png", "jpg", "jpeg"]:
+        is_image_file = True
+        file_data_payload = uploaded_file.getvalue()
+    else:
+        try:
+            file_data_payload = uploaded_file.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            file_data_payload = f"[Error reading file: {e}]"
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
@@ -335,25 +341,30 @@ if prompt:
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
         st.session_state.current_session = new_title
 
-    # Combine user prompt with file contents if a file is active in the sidebar
-    effective_prompt = prompt
-    if uploaded_file is not None and file_content_string:
-        effective_prompt = f"--- Attached File: {uploaded_file.name} ---\n{file_content_string}\n-----------------------------------\n\nUser Request: {prompt}"
-
+    # Append user message to history
     st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
         if uploaded_file is not None:
-            st.caption(f"📁 Attached file included in analysis: `{uploaded_file.name}`")
+            if is_image_file:
+                st.image(file_data_payload, caption=f"Uploaded Image: {uploaded_file.name}", width=400)
+                st.session_state.sessions[st.session_state.current_session].append({
+                    "role": "user", 
+                    "content": file_data_payload, 
+                    "type": "image_display", 
+                    "caption": f"Uploaded Image: {uploaded_file.name}"
+                })
+            else:
+                st.caption(f"📁 Attached document: `{uploaded_file.name}`")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
         
-        image_keywords = ["image", "picture", "photo", "draw", "render", "generate", "create", "make", "painting", "art", "sketch"]
-        is_image_request = any(kw in prompt_lower for kw in image_keywords)
+        image_gen_keywords = ["generate an image", "create a picture", "draw a", "render a picture"]
+        is_image_gen_request = any(kw in prompt_lower for kw in image_gen_keywords)
 
-        if is_image_request:
+        if is_image_gen_request:
             with st.spinner("⚡ F.R.I.D.A.Y. is synthesizing high-precision visual assets..."):
                 img_prompt = prompt
                 for prefix in ["generate an image of", "generate a image of", "generate", "create an image of", "create a picture of", "create", "draw a", "draw an", "draw", "render a", "render", "make an image of", "make a picture of", "make"]:
@@ -370,11 +381,11 @@ if prompt:
                 st.session_state.sessions[st.session_state.current_session].append({
                     "role": "assistant", 
                     "content": image_url, 
-                    "type": "image", 
+                    "type": "image_display", 
                     "caption": f"Generated for Sir: {prompt}"
                 })
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is analyzing data & querying {selected_model_label}..."):
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is processing neural inputs & querying {selected_model_label}..."):
                 try:
                     client = OpenAI(
                         base_url="https://openrouter.ai/api/v1",
@@ -392,14 +403,16 @@ if prompt:
                         )
                     }
                     
-                    # Construct conversation history, injecting the effective prompt (with file text) for the latest turn
+                    effective_prompt = prompt
+                    if uploaded_file is not None and not is_image_file and file_data_payload:
+                        effective_prompt = f"--- Attached File: {uploaded_file.name} ---\n{file_data_payload}\n-----------------------------------\n\nUser Request: {prompt}"
+
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
-                        if m.get("type") != "image":
+                        if m.get("type") != "image_display":
                             history_messages.append({"role": m["role"], "content": m["content"]})
                     
                     history_messages.append({"role": "user", "content": effective_prompt})
-                    
                     conversation_history = [system_instruction] + history_messages
 
                     fallback_sequence = [
@@ -441,7 +454,7 @@ if prompt:
 
                     if reply:
                         if enable_voice:
-                            speech_text = "Here is the analysis, Sir." if "```" in reply else reply
+                            speech_text = "Analysis complete, Sir." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
                                 <script>
