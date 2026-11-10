@@ -145,19 +145,19 @@ st.markdown("""
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 10px #00F0FF, 0 0 25px #00F0FF, 0 0 50px rgba(0, 240, 255, 0.9);
+        text-shadow: 0 0 10px #00F0FF, 0 0 22px #00F0FF, 0 0 40px rgba(0, 240, 255, 0.9);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
-    /* Highly Glowing Sub-status Text */
+    /* Highly Glowing Sub-status Text matching the reference */
     .hud-status {
-        color: #10B981;
+        color: #00F0FF;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px #10B981, 0 0 25px rgba(16, 185, 129, 0.9);
+        text-shadow: 0 0 8px #00F0FF, 0 0 20px rgba(0, 240, 255, 0.8);
         text-align: center;
         margin-bottom: 20px;
     }
@@ -176,7 +176,7 @@ st.markdown("""
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #10B981 !important;
+        border-left: 4px solid #00F0FF !important;
     }
     </style>
 """, unsafe_allow_html=True)
