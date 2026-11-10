@@ -31,16 +31,16 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Deep Teal & Cyan HUD Theme Styling
+# 2. Pure Gradient Code Background Styling & HUD CSS
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Background (Teal/Cyan Navy Gradient) */
+    /* Full Application Navy-to-Teal Gradient Background Code */
     .stApp {
-        background: linear-gradient(135deg, #02182b 0%, #003b46 50%, #07575b 100%) !important;
+        background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
-        color: #66fcf1;
+        color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -51,30 +51,30 @@ st.markdown("""
 
     /* Top Header / Navigation Bar Styling */
     [data-testid="stHeader"] {
-        background: rgba(2, 24, 43, 0.85) !important;
-        border-bottom: 1px solid rgba(102, 252, 241, 0.2);
+        background: rgba(2, 18, 38, 0.75) !important;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Sidebar Background Integration */
     [data-testid="stSidebar"] {
-        background: rgba(2, 24, 43, 0.92) !important;
-        border-right: 1px solid rgba(102, 252, 241, 0.2);
+        background: rgba(2, 18, 38, 0.90) !important;
+        border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     /* Chat Input / Text Box Styling */
     [data-testid="stChatInput"] {
-        background: rgba(2, 24, 43, 0.85) !important;
-        border: 1px solid rgba(102, 252, 241, 0.5) !important;
+        background: rgba(2, 18, 38, 0.85) !important;
+        border: 1px solid rgba(0, 240, 255, 0.5) !important;
         border-radius: 14px !important;
-        box-shadow: 0 0 20px rgba(102, 252, 241, 0.25) !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
     }
 
     [data-testid="stChatInput"] textarea {
-        color: #66fcf1 !important;
+        color: #00F0FF !important;
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
-        color: rgba(102, 252, 241, 0.5) !important;
+        color: rgba(0, 240, 255, 0.5) !important;
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -101,9 +101,9 @@ st.markdown("""
         width: 130px;
         height: 130px;
         border-radius: 50%;
-        border: 2px dashed rgba(102, 252, 241, 0.7);
+        border: 2px dashed rgba(0, 240, 255, 0.7);
         animation: rotateDashedRing 10s linear infinite;
-        box-shadow: 0 0 12px rgba(102, 252, 241, 0.4);
+        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
     }
 
     .friday-core {
@@ -111,9 +111,9 @@ st.markdown("""
         width: 85px;
         height: 85px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(102, 252, 241, 0.3) 0%, rgba(2, 24, 43, 0.95) 80%);
-        border: 2px solid #66fcf1;
-        box-shadow: 0 0 30px #66fcf1, inset 0 0 15px #66fcf1;
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(2, 18, 38, 0.95) 80%);
+        border: 2px solid #00F0FF;
+        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -123,8 +123,8 @@ st.markdown("""
     .friday-symbol {
         font-size: 2.5rem;
         font-weight: 900;
-        color: #66fcf1;
-        text-shadow: 0 0 20px #66fcf1;
+        color: #00F0FF;
+        text-shadow: 0 0 20px #00F0FF;
         font-family: 'Courier New', monospace;
     }
 
@@ -134,48 +134,47 @@ st.markdown("""
     }
 
     @keyframes pulseFRIDAY {
-        0% { box-shadow: 0 0 20px #66fcf1, inset 0 0 15px #66fcf1; }
-        50% { box-shadow: 0 0 50px #66fcf1, inset 0 0 25px #66fcf1; }
-        100% { box-shadow: 0 0 20px #66fcf1, inset 0 0 15px #66fcf1; }
+        0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
+        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
+        100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
     }
 
     .hud-title {
-        color: #66fcf1;
+        color: #00F0FF;
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 20px rgba(102, 252, 241, 0.9);
+        text-shadow: 0 0 20px rgba(0, 240, 255, 1);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
     .hud-status {
-        color: #66fcf1 !important;
+        color: #10B981;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(102, 252, 241, 0.8);
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
         text-align: center;
         margin-bottom: 20px;
     }
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(2, 24, 43, 0.85) !important;
-        border: 1px solid rgba(102, 252, 241, 0.4) !important;
+        background: rgba(2, 18, 38, 0.85) !important;
+        border: 1px solid rgba(0, 240, 255, 0.4) !important;
         border-radius: 12px !important;
-        box-shadow: 0 0 15px rgba(102, 252, 241, 0.2) !important;
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
         margin-bottom: 12px !important;
-        color: #66fcf1 !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
-        border-left: 4px solid #66fcf1 !important;
+        border-left: 4px solid #00F0FF !important;
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #45a29e !important;
+        border-left: 4px solid #10B981 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -204,7 +203,7 @@ if not api_key:
     st.stop()
 
 if "sessions" not in st.session_state:
-    st.session_state.sessions = {"New Chat": [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]}
+    st.session_state.sessions = {"New Chat": []}
 
 if "current_session" not in st.session_state:
     st.session_state.current_session = "New Chat"
@@ -226,7 +225,7 @@ with st.sidebar:
     
     if st.button("➕ New Chat", use_container_width=True):
         new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
-        st.session_state.sessions[new_title] = [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]
+        st.session_state.sessions[new_title] = []
         st.session_state.current_session = new_title
         st.session_state.editing_session = None
         st.rerun()
@@ -291,7 +290,7 @@ with st.sidebar:
     st.divider()
 
     if st.button("🗑️ Purge All Logs", use_container_width=True):
-        st.session_state.sessions = {"New Chat": [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]}
+        st.session_state.sessions = {"New Chat": []}
         st.session_state.current_session = "New Chat"
         st.session_state.editing_session = None
         st.rerun()
