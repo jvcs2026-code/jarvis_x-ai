@@ -31,7 +31,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Pure Gradient Code Background Styling & Glowing HUD CSS
+# 2. Exact HUD Styling & Navy-to-Teal Gradient Background
 # ==========================================
 st.markdown("""
     <style>
@@ -151,7 +151,7 @@ st.markdown("""
         text-align: center;
     }
 
-    /* Highly Glowing Sub-status Text matching the reference */
+    /* Highly Glowing Sub-status Text */
     .hud-status {
         color: #00F0FF;
         font-size: 0.9rem;
