@@ -233,6 +233,10 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
+    st.markdown("### 📁 Neural File Uplink")
+    uploaded_file = st.file_uploader("Upload document/code for analysis", type=["txt", "py", "csv", "json", "md", "log"])
+
+    st.divider()
     st.markdown("### 🕒 Recent Chats")
     
     session_names = list(st.session_state.sessions.keys())
@@ -316,16 +320,32 @@ for message in current_messages:
 # ==========================================
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
+# If a file is uploaded, extract its text content
+file_content_string = ""
+if uploaded_file is not None:
+    try:
+        file_bytes = uploaded_file.read()
+        file_content_string = file_bytes.decode("utf-8", errors="ignore")
+    except Exception as e:
+        file_content_string = f"[Error reading file: {e}]"
+
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
         new_title = prompt[:28] + "..." if len(prompt) > 28 else prompt
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
         st.session_state.current_session = new_title
 
+    # Combine user prompt with file contents if a file is active in the sidebar
+    effective_prompt = prompt
+    if uploaded_file is not None and file_content_string:
+        effective_prompt = f"--- Attached File: {uploaded_file.name} ---\n{file_content_string}\n-----------------------------------\n\nUser Request: {prompt}"
+
     st.session_state.sessions[st.session_state.current_session].append({"role": "user", "content": prompt})
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
+        if uploaded_file is not None:
+            st.caption(f"📁 Attached file included in analysis: `{uploaded_file.name}`")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
@@ -354,7 +374,7 @@ if prompt:
                     "caption": f"Generated for Sir: {prompt}"
                 })
         else:
-            with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
+            with st.spinner(f"⚡ F.R.I.D.A.Y. is analyzing data & querying {selected_model_label}..."):
                 try:
                     client = OpenAI(
                         base_url="https://openrouter.ai/api/v1",
@@ -372,13 +392,15 @@ if prompt:
                         )
                     }
                     
-                    filtered_history = [
-                        {"role": m["role"], "content": m["content"]} 
-                        for m in st.session_state.sessions[st.session_state.current_session] 
-                        if m.get("type") != "image"
-                    ]
+                    # Construct conversation history, injecting the effective prompt (with file text) for the latest turn
+                    history_messages = []
+                    for m in st.session_state.sessions[st.session_state.current_session][:-1]:
+                        if m.get("type") != "image":
+                            history_messages.append({"role": m["role"], "content": m["content"]})
                     
-                    conversation_history = [system_instruction] + filtered_history
+                    history_messages.append({"role": "user", "content": effective_prompt})
+                    
+                    conversation_history = [system_instruction] + history_messages
 
                     fallback_sequence = [
                         selected_model_id, 
@@ -419,7 +441,7 @@ if prompt:
 
                     if reply:
                         if enable_voice:
-                            speech_text = "Here is the solution, Sir." if "```" in reply else reply
+                            speech_text = "Here is the analysis, Sir." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
                                 <script>
