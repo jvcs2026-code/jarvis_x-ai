@@ -31,7 +31,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Exact HUD Styling & Navy-to-Teal Gradient Background
+# 2. HUD Styling & Green Status Text
 # ==========================================
 st.markdown("""
     <style>
@@ -139,7 +139,7 @@ st.markdown("""
         100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
     }
 
-    /* Highly Glowing Title */
+    /* Highly Glowing Cyan Title */
     .hud-title {
         color: #00F0FF;
         font-size: 2.4rem;
@@ -151,13 +151,13 @@ st.markdown("""
         text-align: center;
     }
 
-    /* Highly Glowing Sub-status Text */
+    /* Glowing Green Sub-status Text */
     .hud-status {
-        color: #00F0FF;
+        color: #00FF66 !important;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 8px #00F0FF, 0 0 20px rgba(0, 240, 255, 0.8);
+        text-shadow: 0 0 10px #00FF66, 0 0 25px rgba(0, 255, 102, 0.9);
         text-align: center;
         margin-bottom: 20px;
     }
@@ -176,7 +176,7 @@ st.markdown("""
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
-        border-left: 4px solid #00F0FF !important;
+        border-left: 4px solid #00FF66 !important;
     }
     </style>
 """, unsafe_allow_html=True)
