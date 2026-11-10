@@ -35,14 +35,13 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Navy-to-Teal Gradient Background Code with Slight Text Glow */
+    /* Full Application Navy-to-Teal Gradient Background Code */
     .stApp {
         background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
-        text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
     }
 
     /* Streamlit Containers & Main Area Transparency */
@@ -72,7 +71,6 @@ st.markdown("""
 
     [data-testid="stChatInput"] textarea {
         color: #00F0FF !important;
-        text-shadow: 0 0 4px rgba(0, 240, 255, 0.3);
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
@@ -141,23 +139,25 @@ st.markdown("""
         100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
     }
 
+    /* Enhanced Glowing Header Title */
     .hud-title {
         color: #00F0FF;
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 20px rgba(0, 240, 255, 1);
+        text-shadow: 0 0 10px #00F0FF, 0 0 20px #00F0FF, 0 0 40px rgba(0, 240, 255, 0.8);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
+    /* Enhanced Glowing Status Subtitle */
     .hud-status {
         color: #10B981;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 12px rgba(16, 185, 129, 0.9);
+        text-shadow: 0 0 8px #10B981, 0 0 20px rgba(16, 185, 129, 0.9);
         text-align: center;
         margin-bottom: 20px;
     }
@@ -169,7 +169,6 @@ st.markdown("""
         border-radius: 12px !important;
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
         margin-bottom: 12px !important;
-        text-shadow: 0 0 5px rgba(0, 240, 255, 0.3);
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
