@@ -101,9 +101,9 @@ st.markdown("""
         width: 130px;
         height: 130px;
         border-radius: 50%;
-        border: 2px dashed rgba(0, 240, 255, 0.7);
+        border: 2px dashed rgba(0, 240, 255, 0.8);
         animation: rotateDashedRing 10s linear infinite;
-        box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
     }
 
     .friday-core {
@@ -111,9 +111,9 @@ st.markdown("""
         width: 85px;
         height: 85px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(2, 18, 38, 0.95) 80%);
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.4) 0%, rgba(2, 18, 38, 0.95) 80%);
         border: 2px solid #00F0FF;
-        box-shadow: 0 0 30px #00F0FF, inset 0 0 15px #00F0FF;
+        box-shadow: 0 0 35px #00F0FF, inset 0 0 15px #00F0FF;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -124,7 +124,7 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 900;
         color: #00F0FF;
-        text-shadow: 0 0 20px #00F0FF;
+        text-shadow: 0 0 15px #00F0FF, 0 0 30px #00F0FF;
         font-family: 'Courier New', monospace;
     }
 
@@ -135,39 +135,39 @@ st.markdown("""
 
     @keyframes pulseFRIDAY {
         0% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
-        50% { box-shadow: 0 0 50px #00F0FF, inset 0 0 25px #00F0FF; }
+        50% { box-shadow: 0 0 55px #00F0FF, inset 0 0 25px #00F0FF; }
         100% { box-shadow: 0 0 20px #00F0FF, inset 0 0 15px #00F0FF; }
     }
 
-    /* Enhanced Glowing Header Title */
+    /* Highly Glowing Title */
     .hud-title {
         color: #00F0FF;
         font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: 5px;
-        text-shadow: 0 0 10px #00F0FF, 0 0 20px #00F0FF, 0 0 40px rgba(0, 240, 255, 0.8);
+        text-shadow: 0 0 10px #00F0FF, 0 0 25px #00F0FF, 0 0 50px rgba(0, 240, 255, 0.9);
         margin-top: 10px;
         margin-bottom: 2px;
         text-align: center;
     }
 
-    /* Enhanced Glowing Status Subtitle */
+    /* Highly Glowing Sub-status Text */
     .hud-status {
         color: #10B981;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 8px #10B981, 0 0 20px rgba(16, 185, 129, 0.9);
+        text-shadow: 0 0 10px #10B981, 0 0 25px rgba(16, 185, 129, 0.9);
         text-align: center;
         margin-bottom: 20px;
     }
 
     /* Custom Chat Message Cards */
     [data-testid="stChatMessage"] {
-        background: rgba(2, 18, 38, 0.85) !important;
-        border: 1px solid rgba(0, 240, 255, 0.4) !important;
+        background: rgba(2, 18, 38, 0.88) !important;
+        border: 1px solid rgba(0, 240, 255, 0.5) !important;
         border-radius: 12px !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.3) !important;
         margin-bottom: 12px !important;
     }
 
