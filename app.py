@@ -31,19 +31,10 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Iron Man Theme Styling (Red, Black, & Gold)
+# 2. Locked Iron Man UI Styling (Background Preserved)
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Iron Man Gradient Background Code (Black, Crimson Red, and Gold) */
-    .stApp {
-        background: linear-gradient(135deg, #0d090a 0%, #2b0c10 40%, #781c1c 75%, #d4af37 100%) !important;
-        background-size: cover !important;
-        background-attachment: fixed !important;
-        color: #FFD700;
-        font-family: 'Segoe UI', Roboto, sans-serif;
-    }
-
     /* Streamlit Containers & Main Area Transparency */
     [data-testid="stMain"], [data-testid="stChatMessageContainer"] {
         background: transparent !important;
