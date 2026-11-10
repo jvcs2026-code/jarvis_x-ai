@@ -204,7 +204,7 @@ if not api_key:
     st.stop()
 
 if "sessions" not in st.session_state:
-    st.session_state.sessions = {"New Chat": []}
+    st.session_state.sessions = {"New Chat": [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]}
 
 if "current_session" not in st.session_state:
     st.session_state.current_session = "New Chat"
@@ -226,7 +226,7 @@ with st.sidebar:
     
     if st.button("➕ New Chat", use_container_width=True):
         new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
-        st.session_state.sessions[new_title] = []
+        st.session_state.sessions[new_title] = [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]
         st.session_state.current_session = new_title
         st.session_state.editing_session = None
         st.rerun()
@@ -291,7 +291,7 @@ with st.sidebar:
     st.divider()
 
     if st.button("🗑️ Purge All Logs", use_container_width=True):
-        st.session_state.sessions = {"New Chat": []}
+        st.session_state.sessions = {"New Chat": [{"role": "assistant", "content": "Hello, Sir. All systems are online and running at peak efficiency. What's on the agenda today?"}]}
         st.session_state.current_session = "New Chat"
         st.session_state.editing_session = None
         st.rerun()
