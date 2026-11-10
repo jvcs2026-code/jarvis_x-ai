@@ -151,11 +151,11 @@ st.markdown("""
     }
 
     .hud-status {
-        color: #45a29e;
+        color: #66fcf1 !important;
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(69, 162, 158, 0.8);
+        text-shadow: 0 0 10px rgba(102, 252, 241, 0.8);
         text-align: center;
         margin-bottom: 20px;
     }
