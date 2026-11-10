@@ -31,17 +31,18 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Pure Gradient Code Background Styling & HUD CSS
+# 2. Pure Gradient Code Background Styling & Glowing HUD CSS
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Navy-to-Teal Gradient Background Code */
+    /* Full Application Navy-to-Teal Gradient Background Code with Slight Text Glow */
     .stApp {
         background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
         color: #00F0FF;
         font-family: 'Segoe UI', Roboto, sans-serif;
+        text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
     }
 
     /* Streamlit Containers & Main Area Transparency */
@@ -71,6 +72,7 @@ st.markdown("""
 
     [data-testid="stChatInput"] textarea {
         color: #00F0FF !important;
+        text-shadow: 0 0 4px rgba(0, 240, 255, 0.3);
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
@@ -155,7 +157,7 @@ st.markdown("""
         font-size: 0.9rem;
         letter-spacing: 2px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+        text-shadow: 0 0 12px rgba(16, 185, 129, 0.9);
         text-align: center;
         margin-bottom: 20px;
     }
@@ -167,6 +169,7 @@ st.markdown("""
         border-radius: 12px !important;
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
         margin-bottom: 12px !important;
+        text-shadow: 0 0 5px rgba(0, 240, 255, 0.3);
     }
 
     [data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
