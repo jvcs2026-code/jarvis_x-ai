@@ -7,8 +7,6 @@ from openai import OpenAI
 from PIL import Image
 import io
 import random
-import zipfile
-import xml.etree.ElementTree as ET
 
 # ==========================================
 # 1. Page Configuration & Dynamic Favicon
@@ -332,7 +330,6 @@ if uploaded_file is not None:
         file_data_payload = uploaded_file.getvalue()
     elif file_extension == "pdf":
         try:
-            # Native lightweight PDF text extractor (bypasses external dependencies)
             content = uploaded_file.getvalue()
             extracted_text = []
             start_pos = 0
@@ -346,12 +343,15 @@ if uploaded_file is not None:
                     if len(chunk) > 2:
                         extracted_text.append(chunk)
                 start_pos += 1
-            file_data_payload = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
+            full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
+            # Safely truncate large PDFs to prevent HTTP 400 token limit errors
+            file_data_payload = full_pdf_text[:12000]
         except Exception as e:
             file_data_payload = f"[Error reading PDF file: {e}]"
     else:
         try:
-            file_data_payload = uploaded_file.read().decode("utf-8", errors="ignore")
+            raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
+            file_data_payload = raw_text[:12000]
         except Exception as e:
             file_data_payload = f"[Error reading file: {e}]"
 
@@ -375,7 +375,7 @@ if prompt:
                     "caption": f"Uploaded Image: {uploaded_file.name}"
                 })
             else:
-                st.caption(f"📁 Attached document: `{uploaded_file.name}`")
+                st.caption(f"📁 Attached document: `{uploaded_file.name}` (Optimized)")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
