@@ -31,10 +31,19 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Locked Iron Man UI Styling (Background Preserved)
+# 2. Iron Man Theme Styling (Red, Black, & Gold)
 # ==========================================
 st.markdown("""
     <style>
+    /* Full Application Iron Man Gradient Background Code (Black, Crimson Red, and Gold) */
+    .stApp {
+        background: linear-gradient(135deg, #0d090a 0%, #2b0c10 40%, #781c1c 75%, #d4af37 100%) !important;
+        background-size: cover !important;
+        background-attachment: fixed !important;
+        color: #FFD700;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
     /* Streamlit Containers & Main Area Transparency */
     [data-testid="stMain"], [data-testid="stChatMessageContainer"] {
         background: transparent !important;
@@ -336,12 +345,12 @@ if prompt:
                 encoded_prompt = urllib.parse.quote(clean_query)
                 image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&seed={rand_seed}&model=turbo&nologo=true&enhance=true"
                 
-                st.image(image_url, caption=f"Generated for Sir: {prompt}")
+                st.image(image_url, caption=f"Generated for Boss: {prompt}")
                 st.session_state.sessions[st.session_state.current_session].append({
                     "role": "assistant", 
                     "content": image_url, 
                     "type": "image", 
-                    "caption": f"Generated for Sir: {prompt}"
+                    "caption": f"Generated for Boss: {prompt}"
                 })
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is compiling code & querying {selected_model_label}..."):
@@ -358,7 +367,7 @@ if prompt:
                             "You are a brilliant tactical advisor and engineer. "
                             "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
                             "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
-                            "Always maintain a polite, tactical, efficient demeanor and address the user as Sir."
+                            "Always maintain a polite, tactical, efficient demeanor and address the user as Boss."
                         )
                     }
                     
@@ -409,7 +418,7 @@ if prompt:
 
                     if reply:
                         if enable_voice:
-                            speech_text = "Here is the solution, Sir." if "```" in reply else reply
+                            speech_text = "Here is the solution, Boss." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
                             st.markdown(f"""
                                 <script>
