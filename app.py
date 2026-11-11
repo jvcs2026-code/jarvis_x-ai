@@ -260,7 +260,6 @@ with st.sidebar:
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
     
-    # Using a form container to naturally manage uploader reset without direct session state assignment errors
     with st.form("upload_form", clear_on_submit=True):
         uploaded_files = st.file_uploader(
             "Upload multiple PDFs, docs, code, or images", 
@@ -355,7 +354,6 @@ current_session_files_key = f"files_{st.session_state.current_session}"
 if current_session_files_key not in st.session_state:
     st.session_state[current_session_files_key] = []
 
-# Process files when ingested via form button
 if submitted_files and uploaded_files:
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split(".")[-1].lower()
@@ -408,7 +406,6 @@ if prompt:
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
-        # Render any active images stored in session memory for this prompt display
         for f_item in st.session_state.get(current_session_files_key, []):
             if f_item["type"] == "image":
                 st.image(f_item["data"], caption=f"Image Memory: {f_item['name']}", width=350)
@@ -471,7 +468,6 @@ if prompt:
                     
                     multimodal_content_parts = []
                     
-                    # Include all stored text document memory
                     accumulated_text_payloads = []
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "text":
@@ -481,7 +477,6 @@ if prompt:
                         combined_memory_text = "\n\n".join(accumulated_text_payloads)
                         multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n-----------------------------------\n"})
 
-                    # Include all stored image memory
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "image":
                             base64_img = base64.b64encode(f_item["data"]).decode("utf-8")
@@ -494,7 +489,7 @@ if prompt:
 
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
-                        if m.get("type"] != "image_display":
+                        if m.get("type") != "image_display":
                             history_messages.append({"role": m["role"], "content": m["content"]})
                     
                     history_messages.append({"role": "user", "content": multimodal_content_parts})
