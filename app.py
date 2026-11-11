@@ -6,6 +6,7 @@ import streamlit as st
 from openai import OpenAI
 from PIL import Image
 import io
+import base64
 import random
 
 # ==========================================
@@ -258,13 +259,15 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
-    # Using a unique key so we can programmatically clear/reset it after sending
-    uploaded_files = st.file_uploader(
-        "Upload multiple PDFs, docs, code, or images", 
-        type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-        key="file_uploader_widget"
-    )
+    
+    # Using a form container to naturally manage uploader reset without direct session state assignment errors
+    with st.form("upload_form", clear_on_submit=True):
+        uploaded_files = st.file_uploader(
+            "Upload multiple PDFs, docs, code, or images", 
+            type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
+            accept_multiple_files=True
+        )
+        submitted_files = st.form_submit_button("📥 Ingest Files into Memory")
 
     st.divider()
     st.markdown("### 🕒 Active Chats")
@@ -336,7 +339,7 @@ if st.session_state.current_session not in st.session_state.sessions:
 
 current_messages = st.session_state.sessions[st.session_state.current_session]
 
-# Render Chat History for Active Session (retaining all previous messages, images, and files)
+# Render Chat History for Active Session
 for message in current_messages:
     avatar = "👤" if message["role"] == "user" else "⚡"
     with st.chat_message(message["role"], avatar=avatar):
@@ -348,19 +351,16 @@ for message in current_messages:
 # ==========================================
 # 4. User Interaction & Expert Coding Core
 # ==========================================
-prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
-
 current_session_files_key = f"files_{st.session_state.current_session}"
 if current_session_files_key not in st.session_state:
     st.session_state[current_session_files_key] = []
 
-# Process newly uploaded files and append them to session memory permanently
-if uploaded_files:
+# Process files when ingested via form button
+if submitted_files and uploaded_files:
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split(".")[-1].lower()
         if file_extension in ["png", "jpg", "jpeg"]:
             img_bytes = uploaded_file.getvalue()
-            # Avoid duplicate adding if already in session storage
             if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                 st.session_state[current_session_files_key].append({"type": "image", "name": uploaded_file.name, "data": img_bytes})
         elif file_extension == "pdf":
@@ -392,13 +392,15 @@ if uploaded_files:
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                     st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading file: {e}]"})
+    st.success("Files successfully ingested into F.R.I.D.A.Y.'s neural memory, Sir!")
+
+prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
         new_title = prompt[:28] + "..." if len(prompt) > 28 else prompt
         st.session_state.sessions[new_title] = st.session_state.sessions.pop(st.session_state.current_session)
         st.session_state.current_session = new_title
-        # Re-map stored files key for renamed session
         st.session_state[f"files_{st.session_state.current_session}"] = st.session_state.pop(current_session_files_key)
         current_session_files_key = f"files_{st.session_state.current_session}"
 
@@ -406,21 +408,20 @@ if prompt:
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
-        # Render newly uploaded images and record them into chat history
-        if uploaded_files:
-            for uploaded_file in uploaded_files:
-                file_ext = uploaded_file.name.split(".")[-1].lower()
-                if file_ext in ["png", "jpg", "jpeg"]:
-                    img_val = uploaded_file.getvalue()
-                    st.image(img_val, caption=f"Image: {uploaded_file.name}", width=350)
-                    st.session_state.sessions[st.session_state.current_session].append({
-                        "role": "user", 
-                        "content": img_val, 
-                        "type": "image_display", 
-                        "caption": f"Image: {uploaded_file.name}"
-                    })
-            file_names = ", ".join([f"`{f.name}`" for f in uploaded_files])
-            st.caption(f"📁 Attached files: {file_names} (Integrated into Neural Memory)")
+        # Render any active images stored in session memory for this prompt display
+        for f_item in st.session_state.get(current_session_files_key, []):
+            if f_item["type"] == "image":
+                st.image(f_item["data"], caption=f"Image Memory: {f_item['name']}", width=350)
+                st.session_state.sessions[st.session_state.current_session].append({
+                    "role": "user", 
+                    "content": f_item["data"], 
+                    "type": "image_display", 
+                    "caption": f"Image Memory: {f_item['name']}"
+                })
+        stored_files = st.session_state.get(current_session_files_key, [])
+        if stored_files:
+            file_names = ", ".join([f"`{f['name']}`" for f in stored_files])
+            st.caption(f"📁 Active Neural Memory Files: {file_names}")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
@@ -468,23 +469,35 @@ if prompt:
                         )
                     }
                     
-                    # Aggregate ALL files and images stored in session memory so F.R.I.D.A.Y. remembers everything uploaded previously in this chat!
-                    accumulated_payloads = []
+                    multimodal_content_parts = []
+                    
+                    # Include all stored text document memory
+                    accumulated_text_payloads = []
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "text":
-                            accumulated_payloads.append(f"--- Document Memory: {f_item['name']} ---\n{f_item['content']}")
+                            accumulated_text_payloads.append(f"--- Document Memory: {f_item['name']} ---\n{f_item['content']}")
+                    
+                    if accumulated_text_payloads:
+                        combined_memory_text = "\n\n".join(accumulated_text_payloads)
+                        multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n-----------------------------------\n"})
 
-                    effective_prompt = prompt
-                    if accumulated_payloads:
-                        combined_memory_text = "\n\n".join(accumulated_payloads)
-                        effective_prompt = f"{combined_memory_text}\n-----------------------------------\n\nUser Request: {prompt}"
+                    # Include all stored image memory
+                    for f_item in st.session_state.get(current_session_files_key, []):
+                        if f_item["type"] == "image":
+                            base64_img = base64.b64encode(f_item["data"]).decode("utf-8")
+                            multimodal_content_parts.append({
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}
+                            })
+
+                    multimodal_content_parts.append({"type": "text", "text": prompt})
 
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
-                        if m.get("type") != "image_display":
+                        if m.get("type"] != "image_display":
                             history_messages.append({"role": m["role"], "content": m["content"]})
                     
-                    history_messages.append({"role": "user", "content": effective_prompt})
+                    history_messages.append({"role": "user", "content": multimodal_content_parts})
                     conversation_history = [system_instruction] + history_messages
 
                     fallback_sequence = [
@@ -539,9 +552,6 @@ if prompt:
                             """, unsafe_allow_html=True)
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
-                        
-                        # Automatically clear/reset the file uploader widget state so it doesn't stay locked after sending
-                        st.session_state["file_uploader_widget"] = None
                         st.rerun()
                     else:
                         st.error(f"Gateway Error: {last_error}")
