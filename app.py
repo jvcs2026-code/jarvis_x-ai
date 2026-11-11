@@ -196,7 +196,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Backend & Multi-Session History Setup
+# 3. Authentication & Session Management Setup
 # ==========================================
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
@@ -204,12 +204,16 @@ if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
+# Initialize Authentication State
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
 if "sessions" not in st.session_state:
     st.session_state.sessions = {"New Chat": []}
-
 if "current_session" not in st.session_state:
     st.session_state.current_session = "New Chat"
-
 if "editing_session" not in st.session_state:
     st.session_state.editing_session = None
 
@@ -221,9 +225,34 @@ MODEL_OPTIONS = {
     "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
 }
 
-# Sidebar Navigation & Session Management
+# Sidebar Authentication & Navigation
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
+    
+    # Sign-In Module
+    if not st.session_state.authenticated:
+        st.markdown("### 🔐 Neural Sign-In")
+        auth_user = st.text_input("Username / Sir ID")
+        auth_pass = st.text_input("Access Code", type="password")
+        
+        if st.button("Authenticate", use_container_width=True):
+            if auth_user.strip() and auth_pass.strip():
+                st.session_state.authenticated = True
+                st.session_state.username = auth_user.strip()
+                st.success(f"Access Granted. Welcome, Sir {st.session_state.username}.")
+                st.rerun()
+            else:
+                st.error("Please enter valid credentials.")
+        st.stop()  # Halt execution until authenticated
+    else:
+        st.success(f"🟢 Logged in as: **{st.session_state.username}**")
+        if st.button("🔒 Sign Out", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.username = ""
+            st.session_state.sessions = {"New Chat": []}
+            st.rerun()
+
+    st.divider()
     
     if st.button("➕ New Chat", use_container_width=True):
         new_title = f"Chat Session {len(st.session_state.sessions) + 1}"
@@ -237,7 +266,7 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload PDF, doc, code, or image", type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
 
     st.divider()
-    st.markdown("### 🕒 Recent Chats")
+    st.markdown("### 🕒 Saved Chats")
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
@@ -344,7 +373,6 @@ if uploaded_file is not None:
                         extracted_text.append(chunk)
                 start_pos += 1
             full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
-            # Safely truncate large PDFs to prevent HTTP 400 token limit errors
             file_data_payload = full_pdf_text[:12000]
         except Exception as e:
             file_data_payload = f"[Error reading PDF file: {e}]"
