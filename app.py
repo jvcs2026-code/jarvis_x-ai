@@ -258,7 +258,12 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
-    uploaded_file = st.file_uploader("Upload PDF, doc, code, or image", type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
+    # accept_multiple_files=True allows selecting and uploading multiple files simultaneously
+    uploaded_files = st.file_uploader(
+        "Upload multiple PDFs, docs, code, or images", 
+        type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
+        accept_multiple_files=True
+    )
 
     st.divider()
     st.markdown("### 🕒 Active Chats")
@@ -344,39 +349,40 @@ for message in current_messages:
 # ==========================================
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
-file_data_payload = None
-is_image_file = False
+aggregated_file_payloads = []
+image_display_list = []
 
-if uploaded_file is not None:
-    file_extension = uploaded_file.name.split(".")[-1].lower()
-    if file_extension in ["png", "jpg", "jpeg"]:
-        is_image_file = True
-        file_data_payload = uploaded_file.getvalue()
-    elif file_extension == "pdf":
-        try:
-            content = uploaded_file.getvalue()
-            extracted_text = []
-            start_pos = 0
-            while True:
-                start_pos = content.find(b'(', start_pos)
-                if start_pos == -1:
-                    break
-                end_pos = content.find(b')', start_pos)
-                if end_pos != -1:
-                    chunk = content[start_pos+1:end_pos].decode('latin-1', errors='ignore')
-                    if len(chunk) > 2:
-                        extracted_text.append(chunk)
-                start_pos += 1
-            full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
-            file_data_payload = full_pdf_text[:12000]
-        except Exception as e:
-            file_data_payload = f"[Error reading PDF file: {e}]"
-    else:
-        try:
-            raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
-            file_data_payload = raw_text[:12000]
-        except Exception as e:
-            file_data_payload = f"[Error reading file: {e}]"
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        file_extension = uploaded_file.name.split(".")[-1].lower()
+        if file_extension in ["png", "jpg", "jpeg"]:
+            img_bytes = uploaded_file.getvalue()
+            image_display_list.append((img_bytes, uploaded_file.name))
+        elif file_extension == "pdf":
+            try:
+                content = uploaded_file.getvalue()
+                extracted_text = []
+                start_pos = 0
+                while True:
+                    start_pos = content.find(b'(', start_pos)
+                    if start_pos == -1:
+                        break
+                    end_pos = content.find(b')', start_pos)
+                    if end_pos != -1:
+                        chunk = content[start_pos+1:end_pos].decode('latin-1', errors='ignore')
+                        if len(chunk) > 2:
+                            extracted_text.append(chunk)
+                    start_pos += 1
+                full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
+                aggregated_file_payloads.append(f"--- Attached Document: {uploaded_file.name} ---\n{full_pdf_text[:8000]}")
+            except Exception as e:
+                aggregated_file_payloads.append(f"--- Attached Document: {uploaded_file.name} ---\n[Error reading PDF: {e}]")
+        else:
+            try:
+                raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
+                aggregated_file_payloads.append(f"--- Attached File: {uploaded_file.name} ---\n{raw_text[:8000]}")
+            except Exception as e:
+                aggregated_file_payloads.append(f"--- Attached File: {uploaded_file.name} ---\n[Error reading file: {e}]")
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
@@ -388,17 +394,18 @@ if prompt:
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
-        if uploaded_file is not None:
-            if is_image_file:
-                st.image(file_data_payload, caption=f"Uploaded Image: {uploaded_file.name}", width=400)
+        if image_display_list:
+            for img_bytes, name in image_display_list:
+                st.image(img_bytes, caption=f"Image: {name}", width=350)
                 st.session_state.sessions[st.session_state.current_session].append({
                     "role": "user", 
-                    "content": file_data_payload, 
+                    "content": img_bytes, 
                     "type": "image_display", 
-                    "caption": f"Uploaded Image: {uploaded_file.name}"
+                    "caption": f"Image: {name}"
                 })
-            else:
-                st.caption(f"📁 Attached document: `{uploaded_file.name}` (Optimized)")
+        if uploaded_files:
+            file_names = ", ".join([f"`{f.name}`" for f in uploaded_files])
+            st.caption(f"📁 Attached files: {file_names} (Optimized)")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
@@ -447,8 +454,9 @@ if prompt:
                     }
                     
                     effective_prompt = prompt
-                    if uploaded_file is not None and not is_image_file and file_data_payload:
-                        effective_prompt = f"--- Attached Document: {uploaded_file.name} ---\n{file_data_payload}\n-----------------------------------\n\nUser Request: {prompt}"
+                    if aggregated_file_payloads:
+                        combined_files_text = "\n\n".join(aggregated_file_payloads)
+                        effective_prompt = f"{combined_files_text}\n-----------------------------------\n\nUser Request: {prompt}"
 
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
