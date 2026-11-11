@@ -196,7 +196,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Authentication & Session Management Setup
+# 3. Backend & Session Management Setup
 # ==========================================
 api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
@@ -204,11 +204,11 @@ if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# Initialize Authentication State
+# Initialize State Variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "username" not in st.session_state:
-    st.session_state.username = ""
+    st.session_state.username = "Sir"
 
 if "sessions" not in st.session_state:
     st.session_state.sessions = {"New Chat": []}
@@ -225,32 +225,28 @@ MODEL_OPTIONS = {
     "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
 }
 
-# Sidebar Authentication & Navigation
+# Sidebar Navigation & Optional Sign-In
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
-    # Sign-In Module
-    if not st.session_state.authenticated:
-        st.markdown("### 🔐 Neural Sign-In")
-        auth_user = st.text_input("Username / Sir ID")
-        auth_pass = st.text_input("Access Code", type="password")
-        
-        if st.button("Authenticate", use_container_width=True):
-            if auth_user.strip() and auth_pass.strip():
-                st.session_state.authenticated = True
-                st.session_state.username = auth_user.strip()
-                st.success(f"Access Granted. Welcome, Sir {st.session_state.username}.")
+    # Optional Sign-In Section
+    with st.expander("🔐 Optional Neural Sign-In"):
+        if not st.session_state.authenticated:
+            opt_user = st.text_input("Sir ID / Username", key="opt_username_input")
+            if st.button("Sign In", use_container_width=True):
+                if opt_user.strip():
+                    st.session_state.authenticated = True
+                    st.session_state.username = opt_user.strip()
+                    st.success(f"Linked profile: {st.session_state.username}")
+                    st.rerun()
+                else:
+                    st.warning("Please enter a valid identifier.")
+        else:
+            st.markdown(f"Connected as: **{st.session_state.username}**")
+            if st.button("Disconnect", use_container_width=True):
+                st.session_state.authenticated = False
+                st.session_state.username = "Sir"
                 st.rerun()
-            else:
-                st.error("Please enter valid credentials.")
-        st.stop()  # Halt execution until authenticated
-    else:
-        st.success(f"🟢 Logged in as: **{st.session_state.username}**")
-        if st.button("🔒 Sign Out", use_container_width=True):
-            st.session_state.authenticated = False
-            st.session_state.username = ""
-            st.session_state.sessions = {"New Chat": []}
-            st.rerun()
 
     st.divider()
     
@@ -266,7 +262,7 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload PDF, doc, code, or image", type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"])
 
     st.divider()
-    st.markdown("### 🕒 Saved Chats")
+    st.markdown("### 🕒 Active Chats")
     
     session_names = list(st.session_state.sessions.keys())
     for s_name in reversed(session_names):
@@ -442,8 +438,9 @@ if prompt:
                     system_instruction = {
                         "role": "system",
                         "content": (
-                            "You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
-                            "You are a brilliant tactical advisor and engineer. "
+                            f"You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
+                            f"You are a brilliant tactical advisor and engineer. "
+                            f"Current user profile: {st.session_state.username}. "
                             "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
                             "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
                             "Always maintain a polite, tactical, efficient demeanor and address the user as Sir."
