@@ -204,7 +204,6 @@ if not api_key:
     st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
-# Initialize State Variables
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "username" not in st.session_state:
@@ -229,21 +228,21 @@ MODEL_OPTIONS = {
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
-    # Optional Sign-In Section
     with st.expander("🔐 Optional Neural Sign-In"):
         if not st.session_state.authenticated:
-            opt_user = st.text_input("Sir ID / Username", key="opt_username_input")
-            if st.button("Sign In", use_container_width=True):
-                if opt_user.strip():
+            login_id = st.text_input("Email / Username / Provider ID", key="opt_login_id")
+            pass_id = st.text_input("Access Password / Token", type="password", key="opt_pass_id")
+            if st.button("Establish Neural Link", use_container_width=True):
+                if login_id.strip():
                     st.session_state.authenticated = True
-                    st.session_state.username = opt_user.strip()
+                    st.session_state.username = login_id.split("@")[0]
                     st.success(f"Linked profile: {st.session_state.username}")
                     st.rerun()
                 else:
                     st.warning("Please enter a valid identifier.")
         else:
             st.markdown(f"Connected as: **{st.session_state.username}**")
-            if st.button("Disconnect", use_container_width=True):
+            if st.button("Disconnect Core", use_container_width=True):
                 st.session_state.authenticated = False
                 st.session_state.username = "Sir"
                 st.rerun()
