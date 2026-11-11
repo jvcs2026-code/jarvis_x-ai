@@ -259,12 +259,15 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📁 Neural File Uplink")
-    uploaded_files = st.file_uploader(
-        "Upload multiple PDFs, docs, code, or images", 
-        type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-        key="file_uploader_widget"
-    )
+    
+    # Using a form container to naturally manage uploader reset without direct session state assignment errors
+    with st.form("upload_form", clear_on_submit=True):
+        uploaded_files = st.file_uploader(
+            "Upload multiple PDFs, docs, code, or images", 
+            type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
+            accept_multiple_files=True
+        )
+        submitted_files = st.form_submit_button("📥 Ingest Files into Memory")
 
     st.divider()
     st.markdown("### 🕒 Active Chats")
@@ -348,14 +351,12 @@ for message in current_messages:
 # ==========================================
 # 4. User Interaction & Expert Coding Core
 # ==========================================
-prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
-
 current_session_files_key = f"files_{st.session_state.current_session}"
 if current_session_files_key not in st.session_state:
     st.session_state[current_session_files_key] = []
 
-# Process newly uploaded files and store them in persistent session memory
-if uploaded_files:
+# Process files when ingested via form button
+if submitted_files and uploaded_files:
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split(".")[-1].lower()
         if file_extension in ["png", "jpg", "jpeg"]:
@@ -391,6 +392,9 @@ if uploaded_files:
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                     st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading file: {e}]"})
+    st.success("Files successfully ingested into F.R.I.D.A.Y.'s neural memory, Sir!")
+
+prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
 
 if prompt:
     if st.session_state.current_session.startswith("New Chat") or st.session_state.current_session.startswith("Chat Session"):
@@ -404,20 +408,20 @@ if prompt:
     
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
-        if uploaded_files:
-            for uploaded_file in uploaded_files:
-                file_ext = uploaded_file.name.split(".")[-1].lower()
-                if file_ext in ["png", "jpg", "jpeg"]:
-                    img_val = uploaded_file.getvalue()
-                    st.image(img_val, caption=f"Image: {uploaded_file.name}", width=350)
-                    st.session_state.sessions[st.session_state.current_session].append({
-                        "role": "user", 
-                        "content": img_val, 
-                        "type": "image_display", 
-                        "caption": f"Image: {uploaded_file.name}"
-                    })
-            file_names = ", ".join([f"`{f.name}`" for f in uploaded_files])
-            st.caption(f"📁 Attached files: {file_names} (Integrated into Neural Memory)")
+        # Render any active images stored in session memory for this prompt display
+        for f_item in st.session_state.get(current_session_files_key, []):
+            if f_item["type"] == "image":
+                st.image(f_item["data"], caption=f"Image Memory: {f_item['name']}", width=350)
+                st.session_state.sessions[st.session_state.current_session].append({
+                    "role": "user", 
+                    "content": f_item["data"], 
+                    "type": "image_display", 
+                    "caption": f"Image Memory: {f_item['name']}"
+                })
+        stored_files = st.session_state.get(current_session_files_key, [])
+        if stored_files:
+            file_names = ", ".join([f"`{f['name']}`" for f in stored_files])
+            st.caption(f"📁 Active Neural Memory Files: {file_names}")
 
     with st.chat_message("assistant", avatar="⚡"):
         prompt_lower = prompt.lower()
@@ -465,10 +469,9 @@ if prompt:
                         )
                     }
                     
-                    # Build multimodal user message content (supporting both text notes and all previously uploaded images in session memory)
                     multimodal_content_parts = []
                     
-                    # Accumulate text memory files
+                    # Include all stored text document memory
                     accumulated_text_payloads = []
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "text":
@@ -478,7 +481,7 @@ if prompt:
                         combined_memory_text = "\n\n".join(accumulated_text_payloads)
                         multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n-----------------------------------\n"})
 
-                    # Accumulate image memory files so models can access previously uploaded images too
+                    # Include all stored image memory
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "image":
                             base64_img = base64.b64encode(f_item["data"]).decode("utf-8")
@@ -487,12 +490,11 @@ if prompt:
                                 "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}
                             })
 
-                    # Append current prompt text
                     multimodal_content_parts.append({"type": "text", "text": prompt})
 
                     history_messages = []
                     for m in st.session_state.sessions[st.session_state.current_session][:-1]:
-                        if m.get("type") != "image_display":
+                        if m.get("type"] != "image_display":
                             history_messages.append({"role": m["role"], "content": m["content"]})
                     
                     history_messages.append({"role": "user", "content": multimodal_content_parts})
@@ -550,9 +552,6 @@ if prompt:
                             """, unsafe_allow_html=True)
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
-                        
-                        # Reset the file uploader bar automatically after sending
-                        st.session_state["file_uploader_widget"] = None
                         st.rerun()
                     else:
                         st.error(f"Gateway Error: {last_error}")
