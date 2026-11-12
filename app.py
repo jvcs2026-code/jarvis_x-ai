@@ -80,16 +80,19 @@ st.markdown("""
         color: rgba(0, 240, 255, 0.5) !important;
     }
 
-    /* Force File Uploader & Form Widgets Dark Theme */
-    [data-testid="stFileUploader"] {
-        background: rgba(2, 18, 38, 0.6) !important;
-        border: 1px solid rgba(0, 240, 255, 0.3) !important;
-        border-radius: 10px !important;
-        padding: 10px;
-    }
-    [data-testid="stFileUploader"] section {
-        background: rgba(2, 18, 38, 0.8) !important;
+    /* Force File Uploader & Form Widgets Dark Theme (Light Mode Immunity) */
+    [data-testid="stFileUploader"], [data-testid="stFileUploaderDropzone"], div[data-baseweb="file-uploader"] {
+        background: rgba(2, 18, 38, 0.85) !important;
         color: #00F0FF !important;
+        border-color: rgba(0, 240, 255, 0.4) !important;
+    }
+    [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] div {
+        color: #00F0FF !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: rgba(0, 240, 255, 0.15) !important;
+        color: #00F0FF !important;
+        border: 1px solid rgba(0, 240, 255, 0.6) !important;
     }
     
     /* Buttons & Expanders */
@@ -579,4 +582,4 @@ if prompt:
                         st.error(f"Gateway Error: {last_error}")
 
                 except Exception as e:
-                    st.error(f"GatewayError: {e}")
+                    st.error(f"Gateway Error: {e}")
