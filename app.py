@@ -86,15 +86,6 @@ MODEL_OPTIONS = {
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
-    with st.expander("ℹ️ About Us"):
-        st.markdown(
-            "**F.R.I.D.A.Y. AI Neural Interface**\n\n"
-            "An advanced multimodal workspace engineered with a Stark Industries sci-fi aesthetic, "
-            "supporting multi-model intelligence, persistent file memory, and voice synthesis.\n\n"
-            "🛠️ **Creator & Lead Engineer:**\n"
-            "### **GURUPRASAD L**"
-        )
-    
     with st.expander("🔐 Optional Neural Sign-In"):
         if not st.session_state.authenticated:
             login_id = st.text_input("Email / Username / Provider ID", key="opt_login_id")
@@ -192,6 +183,17 @@ with st.sidebar:
     selected_model_id = MODEL_OPTIONS[selected_model_label]
     enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
     st.divider()
+
+    # About FRIDAY & Creator Section at the Bottom of the Sidebar
+    with st.expander("ℹ️ About FRIDAY"):
+        st.markdown(
+            "**F.R.I.D.A.Y. Neural Core**\n\n"
+            "An advanced tactical artificial intelligence interface engineered with a "
+            "Stark Industries sci-fi aesthetic. Features multi-model intelligence routing, "
+            "persistent file memory, and real-time voice synthesis.\n\n"
+            "🛠️ **Lead Creator & Architect:**\n"
+            "### **GURUPRASAD L**"
+        )
 
     if st.button("🗑️ Purge All Logs", use_container_width=True):
         st.session_state.sessions = {"New Chat": []}
