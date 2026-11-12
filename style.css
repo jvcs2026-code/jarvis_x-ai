@@ -36,19 +36,21 @@ div[data-testid="stChatInputContainer"] {
     color: #00F0FF !important;
 }
 
-/* Bulletproof Selectbox / Dropdown Light-Mode Overrides */
-[data-baseweb="select"], 
-[data-baseweb="select"] > div,
+/* Bulletproof Selectbox / Dropdown Light-Mode Complete Overrides */
+div[data-baseweb="select"],
+div[data-baseweb="select"] > div,
 div[data-baseweb="select"] div,
-div[data-baseweb="select"] > div > div {
-    background-color: rgba(2, 18, 38, 0.92) !important;
-    background: rgba(2, 18, 38, 0.92) !important;
+.stSelectbox div[data-baseweb="select"],
+.stSelectbox div[data-baseweb="select"] > div {
+    background-color: rgba(2, 18, 38, 0.95) !important;
+    background: rgba(2, 18, 38, 0.95) !important;
     color: #00F0FF !important;
-    border-color: rgba(0, 240, 255, 0.5) !important;
+    border-color: rgba(0, 240, 255, 0.6) !important;
 }
 
-[data-baseweb="select"] span, 
-[data-baseweb="select"] div {
+div[data-baseweb="select"] span, 
+div[data-baseweb="select"] div,
+.stSelectbox span {
     color: #00F0FF !important;
 }
 
