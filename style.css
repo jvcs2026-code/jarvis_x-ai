@@ -27,17 +27,22 @@
     color: #00F0FF !important;
 }
 
-/* Force Chat Input Box Dark Theme */
-[data-testid="stChatInput"] {
-    background: rgba(2, 18, 38, 0.85) !important;
+/* Hardened Chat Input Box & Wrapper Light-Mode Override */
+[data-testid="stChatInput"], 
+div[data-testid="stChatInput"] > div,
+div[data-baseweb="input"] {
+    background: rgba(2, 18, 38, 0.9) !important;
+    background-color: rgba(2, 18, 38, 0.9) !important;
     border: 1px solid rgba(0, 240, 255, 0.5) !important;
     border-radius: 14px !important;
     box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
 }
+
 [data-testid="stChatInput"] textarea {
     color: #00F0FF !important;
     background: transparent !important;
 }
+
 [data-testid="stChatInput"] textarea::placeholder {
     color: rgba(0, 240, 255, 0.5) !important;
 }
