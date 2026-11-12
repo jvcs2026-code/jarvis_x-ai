@@ -86,6 +86,15 @@ MODEL_OPTIONS = {
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
+    with st.expander("ℹ️ About Us"):
+        st.markdown(
+            "**F.R.I.D.A.Y. AI Neural Interface**\n\n"
+            "An advanced multimodal workspace engineered with a Stark Industries sci-fi aesthetic, "
+            "supporting multi-model intelligence, persistent file memory, and voice synthesis.\n\n"
+            "🛠️ **Creator & Lead Engineer:**\n"
+            "### **GURUPRASAD L**"
+        )
+    
     with st.expander("🔐 Optional Neural Sign-In"):
         if not st.session_state.authenticated:
             login_id = st.text_input("Email / Username / Provider ID", key="opt_login_id")
