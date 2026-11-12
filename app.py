@@ -32,16 +32,16 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. HUD Styling & Green Status Text
+# 2. Hardened HUD Styling & Light-Mode Immunity
 # ==========================================
 st.markdown("""
     <style>
-    /* Full Application Navy-to-Teal Gradient Background Code */
+    /* Full Application Navy-to-Teal Gradient & Forced Dark Theme */
     .stApp {
         background: linear-gradient(180deg, #021226 0%, #0d7c7e 100%) !important;
         background-size: cover !important;
         background-attachment: fixed !important;
-        color: #00F0FF;
+        color: #00F0FF !important;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -56,26 +56,53 @@ st.markdown("""
         border-bottom: 1px solid rgba(0, 240, 255, 0.2);
     }
 
-    /* Sidebar Background Integration */
+    /* Sidebar Background & Text Forcing */
     [data-testid="stSidebar"] {
-        background: rgba(2, 18, 38, 0.90) !important;
+        background: rgba(2, 18, 38, 0.95) !important;
         border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
+    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
+        color: #00F0FF !important;
+    }
 
-    /* Chat Input / Text Box Styling */
+    /* Force Chat Input Box Dark Theme */
     [data-testid="stChatInput"] {
         background: rgba(2, 18, 38, 0.85) !important;
         border: 1px solid rgba(0, 240, 255, 0.5) !important;
         border-radius: 14px !important;
         box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
     }
-
     [data-testid="stChatInput"] textarea {
         color: #00F0FF !important;
+        background: transparent !important;
     }
-
     [data-testid="stChatInput"] textarea::placeholder {
         color: rgba(0, 240, 255, 0.5) !important;
+    }
+
+    /* Force File Uploader & Form Widgets Dark Theme */
+    [data-testid="stFileUploader"] {
+        background: rgba(2, 18, 38, 0.6) !important;
+        border: 1px solid rgba(0, 240, 255, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 10px;
+    }
+    [data-testid="stFileUploader"] section {
+        background: rgba(2, 18, 38, 0.8) !important;
+        color: #00F0FF !important;
+    }
+    
+    /* Buttons & Expanders */
+    .stButton button, [data-testid="stFormSubmitButton"] button {
+        background: rgba(0, 240, 255, 0.1) !important;
+        color: #00F0FF !important;
+        border: 1px solid rgba(0, 240, 255, 0.5) !important;
+        border-radius: 8px !important;
+    }
+    .stButton button:hover, [data-testid="stFormSubmitButton"] button:hover {
+        background: rgba(0, 240, 255, 0.25) !important;
+        border-color: #00F0FF !important;
+        box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
     }
 
     /* Centered F.R.I.D.A.Y. Logo Container */
@@ -552,4 +579,4 @@ if prompt:
                         st.error(f"Gateway Error: {last_error}")
 
                 except Exception as e:
-                    st.error(f"Gateway Error: {e}")
+                    st.error(f"GatewayError: {e}")
