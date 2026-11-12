@@ -27,6 +27,14 @@
     color: #00F0FF !important;
 }
 
+/* Target Streamlit Bottom Footer / Chat Input Container Wrapper */
+[data-testid="stChatInputContainer"], 
+div[data-testid="stChatInputContainer"],
+header + div + div div:has([data-testid="stChatInput"]) {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
 /* Bulletproof Chat Input & BaseWeb Inner Input Overrides */
 [data-testid="stChatInput"], 
 div[data-testid="stChatInput"] > div,
