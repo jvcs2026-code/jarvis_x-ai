@@ -1,0 +1,18 @@
+/* Force Streamlit Light-Theme Components to Stay Dark */
+    [data-testid="stFileUploader"], [data-testid="stFileUploaderDropzone"], div[data-baseweb="file-uploader"] {
+        background: rgba(2, 18, 38, 0.85) !important;
+        color: #00F0FF !important;
+        border-color: rgba(0, 240, 255, 0.4) !important;
+    }
+    
+    /* Target dropzone text and small tags in light mode */
+    [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] div {
+        color: #00F0FF !important;
+    }
+
+    /* Force Upload Button inside uploader */
+    [data-testid="stFileUploader"] button {
+        background: rgba(0, 240, 255, 0.15) !important;
+        color: #00F0FF !important;
+        border: 1px solid rgba(0, 240, 255, 0.6) !important;
+    }
