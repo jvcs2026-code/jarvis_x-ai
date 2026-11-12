@@ -36,6 +36,20 @@ div[data-testid="stChatInputContainer"] {
     color: #00F0FF !important;
 }
 
+/* Bulletproof Selectbox / Dropdown Light-Mode Overrides */
+[data-baseweb="select"], 
+[data-baseweb="select"] > div,
+div[data-baseweb="select"] div {
+    background-color: rgba(2, 18, 38, 0.92) !important;
+    background: rgba(2, 18, 38, 0.92) !important;
+    color: #00F0FF !important;
+    border-color: rgba(0, 240, 255, 0.5) !important;
+}
+
+[data-baseweb="select"] span {
+    color: #00F0FF !important;
+}
+
 /* Bulletproof Chat Input & BaseWeb Inner Input Overrides */
 [data-testid="stChatInput"], 
 div[data-testid="stChatInput"] > div,
