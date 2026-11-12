@@ -80,13 +80,19 @@ st.markdown("""
         color: rgba(0, 240, 255, 0.5) !important;
     }
 
-    /* Force File Uploader & Form Widgets Dark Theme (Light Mode Immunity) */
-    [data-testid="stFileUploader"], [data-testid="stFileUploaderDropzone"], div[data-baseweb="file-uploader"] {
-        background: rgba(2, 18, 38, 0.85) !important;
+    /* Absolute Light-Mode Immunity for File Uploader Box & Inner Dropzone */
+    [data-testid="stFileUploader"], 
+    [data-testid="stFileUploaderDropzone"], 
+    div[data-baseweb="file-uploader"],
+    [data-testid="stFileUploader"] section {
+        background-color: rgba(2, 18, 38, 0.9) !important;
         color: #00F0FF !important;
         border-color: rgba(0, 240, 255, 0.4) !important;
     }
-    [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] div {
+    [data-testid="stFileUploader"] span, 
+    [data-testid="stFileUploader"] small, 
+    [data-testid="stFileUploader"] div,
+    [data-testid="stFileUploaderDropzone"] div {
         color: #00F0FF !important;
     }
     [data-testid="stFileUploader"] button {
