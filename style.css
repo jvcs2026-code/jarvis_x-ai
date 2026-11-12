@@ -8,8 +8,17 @@
 }
 
 /* Streamlit Containers & Main Area Transparency */
-[data-testid="stMain"], [data-testid="stChatMessageContainer"] {
+[data-testid="stMain"], [data-testid="stChatMessageContainer"], .main .block-container {
     background: transparent !important;
+}
+
+/* Target Streamlit Bottom Footer & Chat Input Container Wrapper */
+[data-testid="stBottom"], 
+[data-testid="stBottom"] > div,
+[data-testid="stChatInputContainer"], 
+div[data-testid="stChatInputContainer"] {
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 /* Top Header / Navigation Bar Styling */
@@ -25,14 +34,6 @@
 }
 [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
     color: #00F0FF !important;
-}
-
-/* Target Streamlit Bottom Footer / Chat Input Container Wrapper */
-[data-testid="stChatInputContainer"], 
-div[data-testid="stChatInputContainer"],
-header + div + div div:has([data-testid="stChatInput"]) {
-    background: transparent !important;
-    background-color: transparent !important;
 }
 
 /* Bulletproof Chat Input & BaseWeb Inner Input Overrides */
