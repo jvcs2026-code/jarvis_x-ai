@@ -54,16 +54,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Backend & API Resolution
+# 3. Dual-API Key & Session Management Setup
 # ==========================================
-api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GEMINI_API_KEY") or os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
+openrouter_key = st.secrets.get("OPENROUTER_API_KEY") or os.environ.get("OPENROUTER_API_KEY") or ""
+gemini_key = st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
 
-if not api_key:
-    st.error("API Key missing in Streamlit Secrets. Please add your OPENROUTER_API_KEY or GEMINI_API_KEY in App Settings > Secrets.")
+if not openrouter_key and not gemini_key:
+    st.error("API Keys missing in Streamlit Secrets. Please configure at least one (`OPENROUTER_API_KEY` or `GEMINI_API_KEY`) in App Settings > Secrets.")
     st.stop()
-
-# Determine if using Gemini direct or OpenRouter
-is_direct_gemini = api_key.startswith("AIza")
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -77,12 +75,14 @@ if "current_session" not in st.session_state:
 if "editing_session" not in st.session_state:
     st.session_state.editing_session = None
 
-MODEL_OPTIONS = {
-    "Gemini 2.5 Flash (Direct / Fast)": "google/gemini-2.5-flash",
-    "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
-    "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
-    "DeepSeek V4.1 Flash (Code Specialist)": "deepseek/deepseek-v4.1-flash:nitro"
-}
+# Build dynamic model selection based on active keys
+MODEL_OPTIONS = {}
+if gemini_key:
+    MODEL_OPTIONS["Google Gemini 2.5 Flash (Direct API)"] = ("gemini", "gemini-2.5-flash")
+if openrouter_key:
+    MODEL_OPTIONS["Claude Opus 5.5 (OpenRouter)"] = ("openrouter", "anthropic/claude-opus-5.5:nitro")
+    MODEL_OPTIONS["GPT-6 Luna (OpenRouter)"] = ("openrouter", "openai/gpt-6-luna:nitro")
+    MODEL_OPTIONS["DeepSeek V4.1 Flash (OpenRouter)"] = ("openrouter", "deepseek/deepseek-v4.1-flash:nitro")
 
 # Sidebar Navigation & Settings
 with st.sidebar:
@@ -91,6 +91,7 @@ with st.sidebar:
     with st.expander("🔐 Optional Neural Sign-In"):
         if not st.session_state.authenticated:
             login_id = st.text_input("Email / Username / Provider ID", key="opt_login_id")
+            pass_id = st.text_input("Access Password / Token", type="password", key="opt_pass_id")
             if st.button("Establish Neural Link", use_container_width=True):
                 if login_id.strip():
                     st.session_state.authenticated = True
@@ -188,7 +189,7 @@ with st.sidebar:
         index=0
     )
     
-    selected_model_id = MODEL_OPTIONS[selected_model_label]
+    provider_type, selected_model_id = MODEL_OPTIONS[selected_model_label]
     enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
     st.divider()
 
@@ -240,7 +241,7 @@ if submitted_files and uploaded_files:
             try:
                 raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:3000]})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:4000]})
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                     st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error: {e}]"})
@@ -303,13 +304,21 @@ if prompt:
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is processing neural inputs & querying {selected_model_label}..."):
                 try:
-                    # Support both OpenRouter and Direct Google Gemini endpoint seamlessly
-                    client_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/" if is_direct_gemini else "https://openrouter.ai/api/v1"
-                    model_to_use = "gemini-2.5-flash" if is_direct_gemini else selected_model_id
+                    # Select the correct active key and endpoint based on dropdown selection
+                    if provider_type == "gemini":
+                        client_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+                        active_key = gemini_key.strip()
+                    else:
+                        client_base_url = "https://openrouter.ai/api/v1"
+                        active_key = openrouter_key.strip()
+
+                    if not active_key:
+                        st.error(f"Error: API Key for {provider_type.upper()} is empty or not configured correctly in Secrets.")
+                        st.stop()
 
                     client = OpenAI(
                         base_url=client_base_url,
-                        api_key=api_key,
+                        api_key=active_key,
                     )
 
                     system_instruction = {
@@ -317,7 +326,7 @@ if prompt:
                         "content": (
                             f"You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
                             f"Current user profile: {st.session_state.username}. "
-                            "Keep answers concise, technical, and address the user as Sir."
+                            "Keep answers precise, technical, and address the user as Sir."
                         )
                     }
                     
@@ -350,15 +359,15 @@ if prompt:
                     history_messages.append({"role": "user", "content": multimodal_content_parts})
                     conversation_history = [system_instruction] + history_messages
 
-                    extra_headers = {} if is_direct_gemini else {
+                    extra_headers = {} if provider_type == "gemini" else {
                         "HTTP-Referer": "https://friday-ai.streamlit.app",
                         "X-Title": "FRIDAY AI HUD"
                     }
 
                     response = client.chat.completions.create(
-                        model=model_to_use,
+                        model=selected_model_id,
                         messages=conversation_history,
-                        max_tokens=1024,
+                        max_tokens=2048,
                         stream=True,
                         extra_headers=extra_headers
                     )
@@ -375,9 +384,6 @@ if prompt:
                     response_placeholder.markdown(reply)
 
                     if reply:
-                        # Clear file memory after successful turn to save token quota
-                        st.session_state[current_session_files_key] = []
-
                         if enable_voice:
                             speech_text = "Analysis complete, Sir." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
