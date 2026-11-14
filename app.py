@@ -54,13 +54,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Direct API Key & Session Management
+# 3. Backend & Session Management Setup
 # ==========================================
-gemini_key = st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
-groq_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY") or ""
+api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
 
-if not gemini_key and not groq_key:
-    st.error("API Keys missing in Streamlit Secrets. Please add your `GEMINI_API_KEY` or `GROQ_API_KEY` in App Settings > Secrets.")
+if not api_key:
+    st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
     st.stop()
 
 if "authenticated" not in st.session_state:
@@ -75,15 +74,15 @@ if "current_session" not in st.session_state:
 if "editing_session" not in st.session_state:
     st.session_state.editing_session = None
 
-# Free, high-speed direct models only (No OpenRouter limits)
-MODEL_OPTIONS = {}
-if groq_key:
-    MODEL_OPTIONS["Groq Llama 3.3 70B (Ultra-Fast Speed)"] = ("groq", "llama-3.3-70b-versatile")
-    MODEL_OPTIONS["Groq Llama 3.1 8B (Instant Code)"] = ("groq", "llama-3.1-8b-instant")
-if gemini_key:
-    MODEL_OPTIONS["Google Gemini 1.5 Flash (Direct API)"] = ("gemini", "gemini-1.5-flash")
+MODEL_OPTIONS = {
+    "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
+    "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
+    "Gemini 3.8 Flash (Ultra-Fast)": "google/gemini-3.8-flash:nitro",
+    "DeepSeek V4.1 Flash (Code Specialist)": "deepseek/deepseek-v4.1-flash:nitro",
+    "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
+}
 
-# Sidebar Navigation & Settings
+# Sidebar Navigation & Optional Sign-In
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
@@ -120,18 +119,11 @@ with st.sidebar:
     
     with st.form("upload_form", clear_on_submit=True):
         uploaded_files = st.file_uploader(
-            "Upload files or code for analysis", 
+            "Upload multiple PDFs, docs, code, or images", 
             type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
             accept_multiple_files=True
         )
         submitted_files = st.form_submit_button("📥 Ingest Files into Memory")
-
-    current_session_files_key = f"files_{st.session_state.current_session}"
-    if current_session_files_key in st.session_state and st.session_state[current_session_files_key]:
-        if st.button("🗑️ Clear File Memory", use_container_width=True):
-            st.session_state[current_session_files_key] = []
-            st.success("File memory cleared!")
-            st.rerun()
 
     st.divider()
     st.markdown("### 🕒 Active Chats")
@@ -185,10 +177,10 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Active Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=0
+        index=2
     )
     
-    provider_type, selected_model_id = MODEL_OPTIONS[selected_model_label]
+    selected_model_id = MODEL_OPTIONS[selected_model_label]
     enable_voice = st.toggle("🔊 Speak Answers Aloud (TTS)", value=True)
     st.divider()
 
@@ -226,6 +218,7 @@ for message in current_messages:
 # ==========================================
 # 4. User Interaction & Expert Coding Core
 # ==========================================
+current_session_files_key = f"files_{st.session_state.current_session}"
 if current_session_files_key not in st.session_state:
     st.session_state[current_session_files_key] = []
 
@@ -236,14 +229,35 @@ if submitted_files and uploaded_files:
             img_bytes = uploaded_file.getvalue()
             if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                 st.session_state[current_session_files_key].append({"type": "image", "name": uploaded_file.name, "data": img_bytes})
+        elif file_extension == "pdf":
+            try:
+                content = uploaded_file.getvalue()
+                extracted_text = []
+                start_pos = 0
+                while True:
+                    start_pos = content.find(b'(', start_pos)
+                    if start_pos == -1:
+                        break
+                    end_pos = content.find(b')', start_pos)
+                    if end_pos != -1:
+                        chunk = content[start_pos+1:end_pos].decode('latin-1', errors='ignore')
+                        if len(chunk) > 2:
+                            extracted_text.append(chunk)
+                    start_pos += 1
+                full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
+                if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": full_pdf_text[:8000]})
+            except Exception as e:
+                if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading PDF: {e}]"})
         else:
             try:
                 raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:1000]})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:8000]})
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error: {e}]"})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading file: {e}]"})
     st.success("Files successfully ingested into F.R.I.D.A.Y.'s neural memory, Sir!")
 
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
@@ -303,28 +317,20 @@ if prompt:
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is processing neural inputs & querying {selected_model_label}..."):
                 try:
-                    if provider_type == "gemini":
-                        client_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-                        active_key = gemini_key.strip()
-                    else:
-                        client_base_url = "https://api.groq.com/openai/v1"
-                        active_key = groq_key.strip()
-
-                    if not active_key:
-                        st.error(f"Error: API Key for {provider_type.upper()} is empty or not configured in Streamlit Secrets.")
-                        st.stop()
-
                     client = OpenAI(
-                        base_url=client_base_url,
-                        api_key=active_key,
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=api_key,
                     )
 
                     system_instruction = {
                         "role": "system",
                         "content": (
                             f"You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
+                            f"You are a brilliant tactical advisor and engineer. "
                             f"Current user profile: {st.session_state.username}. "
-                            "Keep answers precise, technical, and address the user as Sir."
+                            "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
+                            "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
+                            "Always maintain a polite, tactical, efficient demeanor and address the user as Sir."
                         )
                     }
                     
@@ -333,11 +339,11 @@ if prompt:
                     accumulated_text_payloads = []
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "text":
-                            accumulated_text_payloads.append(f"--- Document: {f_item['name']} ---\n{f_item['content']}")
+                            accumulated_text_payloads.append(f"--- Document Memory: {f_item['name']} ---\n{f_item['content']}")
                     
                     if accumulated_text_payloads:
                         combined_memory_text = "\n\n".join(accumulated_text_payloads)
-                        multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n------------------\n"})
+                        multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n-----------------------------------\n"})
 
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "image":
@@ -357,27 +363,44 @@ if prompt:
                     history_messages.append({"role": "user", "content": multimodal_content_parts})
                     conversation_history = [system_instruction] + history_messages
 
-                    response = client.chat.completions.create(
-                        model=selected_model_id,
-                        messages=conversation_history,
-                        max_tokens=400,
-                        stream=True
-                    )
-                    
-                    response_placeholder = st.empty()
-                    full_streamed_content = ""
-                    for chunk in response:
-                        delta = chunk.choices[0].delta.content
-                        if delta:
-                            full_streamed_content += delta
-                            response_placeholder.markdown(full_streamed_content + "▌")
-                    
-                    reply = full_streamed_content
-                    response_placeholder.markdown(reply)
+                    fallback_sequence = [
+                        selected_model_id, 
+                        "google/gemini-3.8-flash:nitro", 
+                        "deepseek/deepseek-v4.1-flash:nitro"
+                    ]
+                    reply = None
+                    last_error = None
+
+                    for model_to_try in fallback_sequence:
+                        try:
+                            response = client.chat.completions.create(
+                                model=model_to_try,
+                                messages=conversation_history,
+                                max_tokens=4096,
+                                stream=True,
+                                extra_headers={
+                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
+                                    "X-Title": "FRIDAY AI HUD"
+                                }
+                            )
+                            
+                            response_placeholder = st.empty()
+                            full_streamed_content = ""
+                            for chunk in response:
+                                delta = chunk.choices[0].delta.content
+                                if delta:
+                                    full_streamed_content += delta
+                                    response_placeholder.markdown(full_streamed_content + "▌")
+                            
+                            reply = full_streamed_content
+                            response_placeholder.markdown(reply)
+                            if reply:
+                                break
+                        except Exception as model_err:
+                            last_error = model_err
+                            continue
 
                     if reply:
-                        st.session_state[current_session_files_key] = []
-
                         if enable_voice:
                             speech_text = "Analysis complete, Sir." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
@@ -393,6 +416,8 @@ if prompt:
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
                         st.rerun()
+                    else:
+                        st.error(f"Gateway Error: {last_error}")
 
                 except Exception as e:
                     st.error(f"Gateway Error: {e}")
