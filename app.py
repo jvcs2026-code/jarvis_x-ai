@@ -119,11 +119,18 @@ with st.sidebar:
     
     with st.form("upload_form", clear_on_submit=True):
         uploaded_files = st.file_uploader(
-            "Upload multiple PDFs, docs, code, or images", 
+            "Upload file/code (Keep small for free credits)", 
             type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
             accept_multiple_files=True
         )
         submitted_files = st.form_submit_button("📥 Ingest Files into Memory")
+
+    current_session_files_key = f"files_{st.session_state.current_session}"
+    if current_session_files_key in st.session_state and st.session_state[current_session_files_key]:
+        if st.button("🗑️ Clear Uploaded Files Memory", use_container_width=True):
+            st.session_state[current_session_files_key] = []
+            st.success("File memory cleared!")
+            st.rerun()
 
     st.divider()
     st.markdown("### 🕒 Active Chats")
@@ -218,7 +225,6 @@ for message in current_messages:
 # ==========================================
 # 4. User Interaction & Expert Coding Core
 # ==========================================
-current_session_files_key = f"files_{st.session_state.current_session}"
 if current_session_files_key not in st.session_state:
     st.session_state[current_session_files_key] = []
 
@@ -229,35 +235,15 @@ if submitted_files and uploaded_files:
             img_bytes = uploaded_file.getvalue()
             if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                 st.session_state[current_session_files_key].append({"type": "image", "name": uploaded_file.name, "data": img_bytes})
-        elif file_extension == "pdf":
-            try:
-                content = uploaded_file.getvalue()
-                extracted_text = []
-                start_pos = 0
-                while True:
-                    start_pos = content.find(b'(', start_pos)
-                    if start_pos == -1:
-                        break
-                    end_pos = content.find(b')', start_pos)
-                    if end_pos != -1:
-                        chunk = content[start_pos+1:end_pos].decode('latin-1', errors='ignore')
-                        if len(chunk) > 2:
-                            extracted_text.append(chunk)
-                    start_pos += 1
-                full_pdf_text = " ".join(extracted_text) if extracted_text else "[PDF text extracted successfully]"
-                if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": full_pdf_text[:8000]})
-            except Exception as e:
-                if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading PDF: {e}]"})
         else:
             try:
                 raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
+                # Truncate large files to save credits
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:8000]})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:2000]})
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error reading file: {e}]"})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error: {e}]"})
     st.success("Files successfully ingested into F.R.I.D.A.Y.'s neural memory, Sir!")
 
 prompt = st.chat_input(f"Ask F.R.I.D.A.Y. to write code, debug, or analyze ({st.session_state.current_session})...")
@@ -326,11 +312,8 @@ if prompt:
                         "role": "system",
                         "content": (
                             f"You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
-                            f"You are a brilliant tactical advisor and engineer. "
                             f"Current user profile: {st.session_state.username}. "
-                            "CRITICAL INSTRUCTION: When the user asks a general question, explains a concept, or asks a question that is NOT a programming request, answer it conversationally, clearly, and thoughtfully without outputting full code scripts. "
-                            "Only write code blocks when the user explicitly asks you to write, fix, or debug code. "
-                            "Always maintain a polite, tactical, efficient demeanor and address the user as Sir."
+                            "Keep answers concise and clear, addressing the user as Sir."
                         )
                     }
                     
@@ -339,11 +322,11 @@ if prompt:
                     accumulated_text_payloads = []
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "text":
-                            accumulated_text_payloads.append(f"--- Document Memory: {f_item['name']} ---\n{f_item['content']}")
+                            accumulated_text_payloads.append(f"--- Document: {f_item['name']} ---\n{f_item['content']}")
                     
                     if accumulated_text_payloads:
                         combined_memory_text = "\n\n".join(accumulated_text_payloads)
-                        multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n-----------------------------------\n"})
+                        multimodal_content_parts.append({"type": "text", "text": f"{combined_memory_text}\n------------------\n"})
 
                     for f_item in st.session_state.get(current_session_files_key, []):
                         if f_item["type"] == "image":
@@ -376,7 +359,7 @@ if prompt:
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
-                                max_tokens=500,  # <-- Reduced from 4096 to fit free tier credit limit
+                                max_tokens=80,  # <-- Strictly capped to fit remaining free credits
                                 stream=True,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
@@ -401,6 +384,9 @@ if prompt:
                             continue
 
                     if reply:
+                        # Clear file memory after successful response so it doesn't keep using up credits on the next turn
+                        st.session_state[current_session_files_key] = []
+
                         if enable_voice:
                             speech_text = "Analysis complete, Sir." if "```" in reply else reply
                             clean_speech = speech_text.replace('"', '\\"').replace('\n', ' ')
@@ -417,7 +403,7 @@ if prompt:
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
                         st.rerun()
                     else:
-                        st.error(f"Gateway Error: {last_error}")
+                        st.error(f"Gateway Error (Out of Credits): {last_error}")
 
                 except Exception as e:
                     st.error(f"Gateway Error: {e}")
