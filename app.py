@@ -376,7 +376,7 @@ if prompt:
                             response = client.chat.completions.create(
                                 model=model_to_try,
                                 messages=conversation_history,
-                                max_tokens=4096,
+                                max_tokens=500,  # <-- Reduced from 4096 to fit free tier credit limit
                                 stream=True,
                                 extra_headers={
                                     "HTTP-Referer": "https://friday-ai.streamlit.app",
