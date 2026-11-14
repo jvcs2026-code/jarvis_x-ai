@@ -54,13 +54,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. Backend & Session Management Setup
+# 3. Backend & API Resolution
 # ==========================================
-api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GROQ_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+api_key = st.secrets.get("OPENROUTER_API_KEY") or st.secrets.get("GEMINI_API_KEY") or os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("OPENROUTER_API_KEY missing in Streamlit Secrets. Please configure in App Settings > Secrets.")
+    st.error("API Key missing in Streamlit Secrets. Please add your OPENROUTER_API_KEY or GEMINI_API_KEY in App Settings > Secrets.")
     st.stop()
+
+# Determine if using Gemini direct or OpenRouter
+is_direct_gemini = api_key.startswith("AIza")
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -75,21 +78,19 @@ if "editing_session" not in st.session_state:
     st.session_state.editing_session = None
 
 MODEL_OPTIONS = {
+    "Gemini 2.5 Flash (Direct / Fast)": "google/gemini-2.5-flash",
     "Claude Opus 5.5 (Advanced Reasoning)": "anthropic/claude-opus-5.5:nitro",
     "GPT-6 Luna (High-Speed Core)": "openai/gpt-6-luna:nitro",
-    "Gemini 3.8 Flash (Ultra-Fast)": "google/gemini-3.8-flash:nitro",
-    "DeepSeek V4.1 Flash (Code Specialist)": "deepseek/deepseek-v4.1-flash:nitro",
-    "GLM 5.3 Flash (Efficiency)": "z-ai/glm-5.3-flash:nitro"
+    "DeepSeek V4.1 Flash (Code Specialist)": "deepseek/deepseek-v4.1-flash:nitro"
 }
 
-# Sidebar Navigation & Optional Sign-In
+# Sidebar Navigation & Settings
 with st.sidebar:
     st.title("⚡ F.R.I.D.A.Y. Core")
     
     with st.expander("🔐 Optional Neural Sign-In"):
         if not st.session_state.authenticated:
             login_id = st.text_input("Email / Username / Provider ID", key="opt_login_id")
-            pass_id = st.text_input("Access Password / Token", type="password", key="opt_pass_id")
             if st.button("Establish Neural Link", use_container_width=True):
                 if login_id.strip():
                     st.session_state.authenticated = True
@@ -119,7 +120,7 @@ with st.sidebar:
     
     with st.form("upload_form", clear_on_submit=True):
         uploaded_files = st.file_uploader(
-            "Upload file/code (Keep small for free credits)", 
+            "Upload files or code for analysis", 
             type=["pdf", "txt", "py", "csv", "json", "md", "log", "png", "jpg", "jpeg"],
             accept_multiple_files=True
         )
@@ -127,7 +128,7 @@ with st.sidebar:
 
     current_session_files_key = f"files_{st.session_state.current_session}"
     if current_session_files_key in st.session_state and st.session_state[current_session_files_key]:
-        if st.button("🗑️ Clear Uploaded Files Memory", use_container_width=True):
+        if st.button("🗑️ Clear File Memory", use_container_width=True):
             st.session_state[current_session_files_key] = []
             st.success("File memory cleared!")
             st.rerun()
@@ -184,7 +185,7 @@ with st.sidebar:
     selected_model_label = st.selectbox(
         "🧠 Active Model Core",
         options=list(MODEL_OPTIONS.keys()),
-        index=2
+        index=0
     )
     
     selected_model_id = MODEL_OPTIONS[selected_model_label]
@@ -238,9 +239,8 @@ if submitted_files and uploaded_files:
         else:
             try:
                 raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
-                # Truncate large files to save credits
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
-                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:2000]})
+                    st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": raw_text[:3000]})
             except Exception as e:
                 if not any(f.get("name") == uploaded_file.name for f in st.session_state[current_session_files_key]):
                     st.session_state[current_session_files_key].append({"type": "text", "name": uploaded_file.name, "content": f"[Error: {e}]"})
@@ -303,8 +303,12 @@ if prompt:
         else:
             with st.spinner(f"⚡ F.R.I.D.A.Y. is processing neural inputs & querying {selected_model_label}..."):
                 try:
+                    # Support both OpenRouter and Direct Google Gemini endpoint seamlessly
+                    client_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/" if is_direct_gemini else "https://openrouter.ai/api/v1"
+                    model_to_use = "gemini-2.5-flash" if is_direct_gemini else selected_model_id
+
                     client = OpenAI(
-                        base_url="https://openrouter.ai/api/v1",
+                        base_url=client_base_url,
                         api_key=api_key,
                     )
 
@@ -313,7 +317,7 @@ if prompt:
                         "content": (
                             f"You are F.R.I.D.A.Y., Stark Industries advanced AI assistant. "
                             f"Current user profile: {st.session_state.username}. "
-                            "Keep answers concise and clear, addressing the user as Sir."
+                            "Keep answers concise, technical, and address the user as Sir."
                         )
                     }
                     
@@ -346,45 +350,32 @@ if prompt:
                     history_messages.append({"role": "user", "content": multimodal_content_parts})
                     conversation_history = [system_instruction] + history_messages
 
-                    fallback_sequence = [
-                        selected_model_id, 
-                        "google/gemini-3.8-flash:nitro", 
-                        "deepseek/deepseek-v4.1-flash:nitro"
-                    ]
-                    reply = None
-                    last_error = None
+                    extra_headers = {} if is_direct_gemini else {
+                        "HTTP-Referer": "https://friday-ai.streamlit.app",
+                        "X-Title": "FRIDAY AI HUD"
+                    }
 
-                    for model_to_try in fallback_sequence:
-                        try:
-                            response = client.chat.completions.create(
-                                model=model_to_try,
-                                messages=conversation_history,
-                                max_tokens=80,  # <-- Strictly capped to fit remaining free credits
-                                stream=True,
-                                extra_headers={
-                                    "HTTP-Referer": "https://friday-ai.streamlit.app",
-                                    "X-Title": "FRIDAY AI HUD"
-                                }
-                            )
-                            
-                            response_placeholder = st.empty()
-                            full_streamed_content = ""
-                            for chunk in response:
-                                delta = chunk.choices[0].delta.content
-                                if delta:
-                                    full_streamed_content += delta
-                                    response_placeholder.markdown(full_streamed_content + "▌")
-                            
-                            reply = full_streamed_content
-                            response_placeholder.markdown(reply)
-                            if reply:
-                                break
-                        except Exception as model_err:
-                            last_error = model_err
-                            continue
+                    response = client.chat.completions.create(
+                        model=model_to_use,
+                        messages=conversation_history,
+                        max_tokens=1024,
+                        stream=True,
+                        extra_headers=extra_headers
+                    )
+                    
+                    response_placeholder = st.empty()
+                    full_streamed_content = ""
+                    for chunk in response:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            full_streamed_content += delta
+                            response_placeholder.markdown(full_streamed_content + "▌")
+                    
+                    reply = full_streamed_content
+                    response_placeholder.markdown(reply)
 
                     if reply:
-                        # Clear file memory after successful response so it doesn't keep using up credits on the next turn
+                        # Clear file memory after successful turn to save token quota
                         st.session_state[current_session_files_key] = []
 
                         if enable_voice:
@@ -402,8 +393,6 @@ if prompt:
 
                         st.session_state.sessions[st.session_state.current_session].append({"role": "assistant", "content": reply})
                         st.rerun()
-                    else:
-                        st.error(f"Gateway Error (Out of Credits): {last_error}")
 
                 except Exception as e:
                     st.error(f"Gateway Error: {e}")
